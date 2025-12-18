@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アニメ聖地巡礼マップ</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 検索バー + 言語選択（横並びコンテナ） -->
+    <div id="top-bar">
+        <div id="search-bar">
+            <button id="menu-btn" onclick="toggleHamburgerMenu()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path fill="#5f6368" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                </svg>
+            </button>
+            <input type="text" id="search-input" placeholder="アニメ聖地マップを検索" oninput="applyFilter()">
+            <svg id="search-icon" class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+        </div>
+        <div id="language-selector">
+            <button class="lang-btn active" data-lang="ja" onclick="changeLanguage('ja')">🇯🇵 日本語</button>
+            <button class="lang-btn" data-lang="en" onclick="changeLanguage('en')">🇬🇧 English</button>
+            <button class="lang-btn" data-lang="zh" onclick="changeLanguage('zh')">🇨🇳 中文</button>
+            <button class="lang-btn" data-lang="ko" onclick="changeLanguage('ko')">🇰🇷 한국어</button>
+        </div>
+    </div>
+
+    <!-- カテゴリフィルタ（独立コンポーネント） -->
+    <div id="category-filter">
+        <button class="category-btn active" data-category="all" onclick="filterByCategory('all')">
+            <span class="category-icon">📍</span>
+            <span class="category-text">すべて</span>
+        </button>
+        <button class="category-btn" data-category="shrine" onclick="filterByCategory('shrine')">
+            <span class="category-icon">⛩️</span>
+            <span class="category-text">神社・寺院</span>
+        </button>
+        <button class="category-btn" data-category="station" onclick="filterByCategory('station')">
+            <span class="category-icon">🚉</span>
+            <span class="category-text">駅・鉄道</span>
+        </button>
+        <button class="category-btn" data-category="school" onclick="filterByCategory('school')">
+            <span class="category-icon">🏫</span>
+            <span class="category-text">学校</span>
+        </button>
+        <button class="category-btn" data-category="park" onclick="filterByCategory('park')">
+            <span class="category-icon">🌳</span>
+            <span class="category-text">公園</span>
+        </button>
+        <button class="category-btn" data-category="sea" onclick="filterByCategory('sea')">
+            <span class="category-icon">🌊</span>
+            <span class="category-text">海・川</span>
+        </button>
+        <button class="category-btn" data-category="bridge" onclick="filterByCategory('bridge')">
+            <span class="category-icon">🌉</span>
+            <span class="category-text">橋</span>
+        </button>
+        <button class="category-btn" data-category="shop" onclick="filterByCategory('shop')">
+            <span class="category-icon">🏪</span>
+            <span class="category-text">店舗</span>
+        </button>
+        <button class="category-btn" data-category="tower" onclick="filterByCategory('tower')">
+            <span class="category-icon">🗼</span>
+            <span class="category-text">展望台</span>
+        </button>
+    </div>
+
+    <!-- オーバーレイ -->
+    <div id="overlay" onclick="closeAll()"></div>
+
+    <!-- ハンバーガーメニュー -->
+    <div id="hamburger-menu">
+        <div class="menu-header">
+            <div style="font-size: 20px; color: #202124;">メニュー</div>
+            <button class="menu-close-btn" onclick="toggleHamburgerMenu()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="menu-item" onclick="showHistory()">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+            </svg>
+            <span>閲覧履歴</span>
+        </div>
+
+        <div class="menu-item" onclick="showRecommendations()">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+            <span>AIおすすめ</span>
+        </div>
+
+        <div class="menu-item" onclick="toggleAIPanel()">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+            </svg>
+            <span>AI聖地検索</span>
+        </div>
+
+        <div class="menu-item" onclick="openImageSearch()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>画像から聖地を探す</span>
+        </div>
+
+        <div class="menu-item" onclick="toggleSidebar()">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
+            </svg>
+            <span>サイドバーを表示</span>
+        </div>
+
+        <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+            <span>保存済み</span>
+        </div>
+
+        <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+            </svg>
+            <span>最近</span>
+        </div>
+
+        <div class="menu-section">その他</div>
+
+        <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            <span>聖地を追加</span>
+        </div>
+
+        <div class="menu-item">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/>
+            </svg>
+            <span>ヘルプ</span>
+        </div>
+
+        <div class="menu-item" onclick="openRoutePlanner()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+    </svg>
+    <span>ルートプランナー</span>
+</div>
+    </div>
+
+    <!-- 左サイドバー（聖地リスト） -->
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <h2>アニメ聖地一覧</h2>
+            <button class="menu-close-btn" onclick="toggleSidebar()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="filter-section">
+            <!-- 検索フィルター -->
+            <div id="anime-search-box">
+                <input type="text" id="anime-search-input" placeholder="🔍 アニメ名を検索..." oninput="filterAnimeDropdown()">
+            </div>
+            
+            <!-- あいうえおタブ -->
+            <div id="anime-tabs">
+                <button class="anime-tab active" data-tab="all" onclick="filterByTab('all')">全て</button>
+                <button class="anime-tab" data-tab="あ" onclick="filterByTab('あ')">あ</button>
+                <button class="anime-tab" data-tab="か" onclick="filterByTab('か')">か</button>
+                <button class="anime-tab" data-tab="さ" onclick="filterByTab('さ')">さ</button>
+                <button class="anime-tab" data-tab="た" onclick="filterByTab('た')">た</button>
+                <button class="anime-tab" data-tab="な" onclick="filterByTab('な')">な</button>
+                <button class="anime-tab" data-tab="は" onclick="filterByTab('は')">は</button>
+                <button class="anime-tab" data-tab="ま" onclick="filterByTab('ま')">ま</button>
+                <button class="anime-tab" data-tab="や" onclick="filterByTab('や')">や</button>
+                <button class="anime-tab" data-tab="ら" onclick="filterByTab('ら')">ら</button>
+                <button class="anime-tab" data-tab="わ" onclick="filterByTab('わ')">わ</button>
+                <button class="anime-tab" data-tab="A" onclick="filterByTab('A')">A-Z</button>
+            </div>
+            
+            <!-- アニメ選択ドロップダウン -->
+            <select id="anime-filter" onchange="applyFilter()">
+                <option value="all">すべてのアニメ</option>
+            </select>
+        </div>
+
+        <div id="count-display">読み込み中...</div>
+
+        <div id="spots-list">
+            <div id="loading">データを読み込んでいます...</div>
+        </div>
+    </div>
+
+    <!-- 地図 -->
+    <div id="map"></div>
+
+    <!-- AI検索パネル -->
+    <div id="ai-panel">
+        <div id="ai-panel-header">
+            <h2>🤖 AI聖地検索</h2>
+            <button class="menu-close-btn" onclick="toggleAIPanel()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+        <div id="ai-chat-area">
+            <div class="ai-message ai">
+                <div class="message-label">AI</div>
+                <div class="message-content">
+                    こんにちは!アニメ聖地について何でも聞いてください。<br>
+                    例:「ふらいんぐうぃっちの聖地を教えて」
+                </div>
+            </div>
+        </div>
+        <div id="ai-input-area">
+            <div id="ai-input-wrapper">
+                <textarea id="ai-question-input" placeholder="聖地について質問する..." rows="1"></textarea>
+                <button id="ai-send-btn" onclick="sendAIQuestion()">送信</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AIおすすめサイドバー -->
+<div id="recommend-sidebar">
+    <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 20px; margin: 0;">🌟 AIおすすめ</h2>
+        <button class="menu-close-btn" onclick="toggleRecommendSidebar()">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+    </div>
+    <div id="recommend-content" style="padding: 20px;"></div>
+</div>
+
+    <!-- 閲覧履歴サイドバー -->
+    <div id="history-sidebar">
+        <div id="history-header">
+            <h2>閲覧履歴</h2>
+            <button class="menu-close-btn" onclick="toggleHistorySidebar()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+        <div id="history-content">
+            <div class="empty-history">
+                まだ閲覧履歴がありません。<br>
+                聖地をクリックしてみてください!
+            </div>
+        </div>
+    </div>
+
+    <!-- 右側詳細パネル -->
+    <div id="detail-panel">
+        <div class="panel-header">
+            <div style="display: flex; gap: 8px; align-items: center; position: absolute; top: 16px; right: 16px;">
+                <button class="translate-btn" onclick="translateDetailPanel()">🌐 翻訳</button>
+                <button class="close-btn" onclick="closeDetailPanel()">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="detail-header-content"></div>
+        </div>
+        <div class="panel-body">
+            <div id="detail-body-content"></div>
+        </div>
+        <button class="close-btn" onclick="closeDetailPanel()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+
+<div id="route-planner-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>🗺️ ルートプランナー</h2>
+        <button class="close-btn" onclick="closeRoutePlanner()">×</button>
+    </div>
+    
+    <div class="panel-content">
+        <!-- エリアフィルター（最優先） -->
+        <div class="filter-section">
+            <label class="filter-label">📍 都道府県で絞り込み</label>
+            <select id="route-area-filter" class="filter-select" onchange="filterSpotList()">
+                <option value="all">全国</option>
+                <!-- JavaScriptで動的生成 -->
+            </select>
+        </div>
+
+         <!-- アニメフィルター -->
+        <div class="filter-section">
+            <label class="filter-label">📺 アニメで絞り込み</label>
+            <select id="route-anime-filter" class="filter-select" onchange="filterSpotList()">
+                <option value="all">全て表示</option>
+                <!-- JavaScriptで動的生成 -->
+            </select>
+        </div>
+
+                <!-- 検索ボックス -->
+        <div class="filter-section">
+            <label class="filter-label">🔍 聖地を検索</label>
+            <input type="text" 
+                   id="route-search-input" 
+                   class="filter-input" 
+                   placeholder="場所名・アニメ名を入力"
+                   oninput="filterSpotList()">
+        </div>
+
+                <!-- 最近見た聖地 -->
+        <div class="filter-section">
+            <label class="filter-label">⏱️ 最近見た聖地から選ぶ</label>
+            <button class="filter-button" onclick="showRecentSpots()">
+                最近見た聖地を表示
+            </button>
+        </div>
+
+                <!-- 選択数表示 -->
+        <div class="selected-count-section">
+            <div class="selected-count">
+                選択中: <span id="selected-count">0</span>/5
+            </div>
+            <button class="clear-selection-btn" onclick="clearSelection()">
+                全て解除
+            </button>
+        </div>
+
+                <!-- 聖地選択リスト -->
+        <div id="spot-selection-list" class="spot-selection-list">
+            <!-- JavaScriptで動的に生成 -->
+        </div>
+
+                <!-- 出発地選択 -->
+        <div class="section">
+            <h3>出発地</h3>
+            <label class="radio-label">
+                <input type="radio" name="start-type" value="current" checked>
+                <span>現在地から</span>
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="start-type" value="first">
+                <span>最初の聖地から</span>
+            </label>
+        </div>
+
+        <!-- ルート作成ボタン -->
+        <button id="create-route-btn" class="primary-btn" onclick="createRoute()" disabled>
+            最適ルートを作成 🤖
+        </button>
+        
+        <!-- ルート結果 -->
+        <div id="route-result" class="route-result" style="display: none;">
+            <!-- 結果がここに表示される -->
+        </div>
+    </div>
+ </div>
+
+ <!-- 画像検索パネル -->
+<div id="image-search-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>🔍 画像から聖地を探す</h2>
+        <button class="close-btn" onclick="closeImageSearch()">×</button>
+    </div>
+    
+    <div class="panel-content">
+        <!-- タブ切り替え -->
+        <div class="search-tabs">
+            <button class="tab-btn active" onclick="switchImageTab('keyword')">
+                🔍 キーワード検索
+            </button>
+            <button class="tab-btn" onclick="switchImageTab('upload')">
+                📸 画像アップロード
+            </button>
+        </div>
+        
+        <!-- キーワード検索タブ -->
+        <div id="keyword-tab" class="tab-content active">
+            <div class="filter-section">
+                <label class="filter-label">🔍 キーワードを入力</label>
+                <input type="text" 
+                       id="keyword-input" 
+                       class="filter-input" 
+                       placeholder="例：弘前城、鳥居 海、階段 新宿">
+                <button class="primary-btn" onclick="searchByKeyword()">
+                    🔍 画像を検索して分析
+                </button>
+            </div>
+            
+            <div id="keyword-result"></div>
+        </div>
+        
+        <!-- 画像アップロードタブ -->
+        <div id="upload-tab" class="tab-content">
+            <div class="filter-section">
+                <label class="filter-label">📸 画像をアップロード</label>
+                <input type="file" 
+                       id="image-input" 
+                       accept="image/*"
+                       class="filter-input"
+                       onchange="previewImage()">
+                <button class="primary-btn" onclick="identifyLocation()">
+                    📸 画像を分析
+                </button>
+            </div>
+            
+            <div id="image-preview"></div>
+            <div id="image-result"></div>
+        </div>
+    </div>
+</div>
+
+ <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+ <script src="script.js"></script>
+ <script async defer
+     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo&callback=initMap">
+ </script>
+</body>
+</html>
