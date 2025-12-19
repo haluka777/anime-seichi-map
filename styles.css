@@ -1714,4 +1714,36 @@
     #ai-question-input {
         font-size: 16px; /* iOSのズーム防止 */
     }
+    
+    /* ルートプランナー スマホ対応 */
+    .side-panel {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .side-panel.open {
+        right: 0;
+    }
+    
+    #route-planner-panel {
+        width: 100%;
+        right: -100%;
+        z-index: 2001;
+    }
+    
+    #route-planner-panel.open {
+        right: 0;
+    }
+    
+    .panel-header {
+        padding: 15px;
+    }
+    
+    .panel-header h2 {
+        font-size: 18px;
+    }
+    
+    .panel-content {
+        padding: 15px;
+    }
 }
