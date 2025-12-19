@@ -1680,3 +1680,38 @@
 #anime-filter:focus {
     border-color: #1a73e8;
 }
+
+/* ========================================
+   スマホ用 AI検索パネル調整
+   ======================================== */
+@media (max-width: 768px) {
+    #ai-panel {
+        width: 100%;
+        right: -100%;
+        top: 0;
+    }
+    
+    #ai-panel.show {
+        right: 0;
+    }
+    
+    #ai-panel-header {
+        padding: 15px;
+    }
+    
+    #ai-panel-header h2 {
+        font-size: 18px;
+    }
+    
+    #ai-chat-area {
+        padding: 15px;
+    }
+    
+    #ai-input-area {
+        padding: 10px;
+    }
+    
+    #ai-question-input {
+        font-size: 16px; /* iOSのズーム防止 */
+    }
+}
