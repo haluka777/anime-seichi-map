@@ -411,12 +411,16 @@ function createFilterOptions() {
 
 // アニメ名検索フィルター
 function filterAnimeDropdown() {
-    const searchText = document.getElementById('anime-search-input').value.toLowerCase();
+    const searchInput = document.getElementById('anime-search-input');
+    const searchText = searchInput ? searchInput.value.toLowerCase() : '';
     const select = document.getElementById('anime-filter');
     
     // 現在のタブを取得
     const activeTab = document.querySelector('.anime-tab.active');
     const currentTab = activeTab ? activeTab.dataset.tab : 'all';
+    
+    // 現在選択されているアニメを保存
+    const currentSelection = select.value;
     
     // ドロップダウンをクリア
     select.innerHTML = '<option value="all">すべてのアニメ</option>';
@@ -434,6 +438,13 @@ function filterAnimeDropdown() {
         option.textContent = anime;
         select.appendChild(option);
     });
+    
+    // 以前の選択がフィルタ結果に含まれていれば維持、なければ「すべて」
+    if (filteredAnimes.includes(currentSelection)) {
+        select.value = currentSelection;
+    } else {
+        select.value = 'all';
+    }
 }
 
 // あいうえおタブでフィルター
@@ -442,8 +453,21 @@ function filterByTab(tab) {
     document.querySelectorAll('.anime-tab').forEach(btn => btn.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
     
-    // 検索フィルターと組み合わせて更新
+    // 「全て」タブの場合、検索もリセット
+    if (tab === 'all') {
+        const searchInput = document.getElementById('anime-search-input');
+        if (searchInput) searchInput.value = '';
+    }
+    
+    // ドロップダウンを更新
     filterAnimeDropdown();
+    
+    // ドロップダウンの選択を「すべてのアニメ」にリセット
+    const select = document.getElementById('anime-filter');
+    select.value = 'all';
+    
+    // 地図の表示も更新
+    applyFilter();
 }
 
 // アニメ名がタブに一致するかチェック
@@ -1278,6 +1302,14 @@ function openRoutePlanner() {
         menu.classList.remove('open');
     }
     
+    // スマホの場合、他のUIを非表示
+    if (window.innerWidth <= 768) {
+        const topBar = document.getElementById('top-bar');
+        const categoryFilter = document.getElementById('category-filter');
+        if (topBar) topBar.style.display = 'none';
+        if (categoryFilter) categoryFilter.style.display = 'none';
+    }
+    
     initializeFilters();
     filterSpotList();
 }
@@ -1293,6 +1325,12 @@ function closeRoutePlanner() {
     document.getElementById('route-search-input').value = '';
     
     document.getElementById('route-result').style.display = 'none';
+    
+    // UIを再表示
+    const topBar = document.getElementById('top-bar');
+    const categoryFilter = document.getElementById('category-filter');
+    if (topBar) topBar.style.display = '';
+    if (categoryFilter) categoryFilter.style.display = '';
 }
 
 function initializeFilters() {
