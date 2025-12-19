@@ -784,6 +784,10 @@ function toggleAIPanel() {
     const panel = document.getElementById('ai-panel');
     const detailPanel = document.getElementById('detail-panel');
     
+    // スマホ用：他のUIを非表示/表示
+    const topBar = document.getElementById('top-bar');
+    const categoryFilter = document.getElementById('category-filter');
+    
     if (aiPanelOpen) {
         panel.classList.add('show');
         toggleHamburgerMenu();
@@ -791,9 +795,19 @@ function toggleAIPanel() {
         if (detailPanel.classList.contains('show')) {
             detailPanel.classList.add('ai-active');
         }
+        
+        // スマホの場合、他のUIを非表示
+        if (window.innerWidth <= 768) {
+            if (topBar) topBar.style.display = 'none';
+            if (categoryFilter) categoryFilter.style.display = 'none';
+        }
     } else {
         panel.classList.remove('show');
         detailPanel.classList.remove('ai-active');
+        
+        // UIを再表示
+        if (topBar) topBar.style.display = '';
+        if (categoryFilter) categoryFilter.style.display = '';
     }
 }
 
