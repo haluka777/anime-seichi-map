@@ -806,32 +806,21 @@ function closeAll() {
 function toggleAIPanel() {
     aiPanelOpen = !aiPanelOpen;
     const panel = document.getElementById('ai-panel');
-    const detailPanel = document.getElementById('detail-panel');
-    
-    // スマホ用：他のUIを非表示/表示
-    const topBar = document.getElementById('top-bar');
-    const categoryFilter = document.getElementById('category-filter');
     
     if (aiPanelOpen) {
+        // 他のパネルを全て閉じる
+        closeAllPanels();
+        
         panel.classList.add('show');
-        toggleHamburgerMenu();
+        aiPanelOpen = true; // closeAllPanelsでfalseになるので再設定
         
-        if (detailPanel.classList.contains('show')) {
-            detailPanel.classList.add('ai-active');
-        }
-        
-        // スマホの場合、他のUIを非表示
-        if (window.innerWidth <= 768) {
-            if (topBar) topBar.style.display = 'none';
-            if (categoryFilter) categoryFilter.style.display = 'none';
-        }
+        // bodyのスクロールを無効化（スマホ用）
+        document.body.style.overflow = 'hidden';
     } else {
         panel.classList.remove('show');
-        detailPanel.classList.remove('ai-active');
         
-        // UIを再表示
-        if (topBar) topBar.style.display = '';
-        if (categoryFilter) categoryFilter.style.display = '';
+        // bodyのスクロールを有効化
+        document.body.style.overflow = '';
     }
 }
 
@@ -1294,38 +1283,16 @@ function showNotification(message) {
 // ========================================
 
 function openRoutePlanner() {
-    console.log('openRoutePlanner called'); // デバッグ用
+    // 他のパネルを全て閉じる
+    closeAllPanels();
     
     const panel = document.getElementById('route-planner-panel');
-    if (!panel) {
-        console.error('route-planner-panel not found!');
-        return;
-    }
+    if (!panel) return;
     
     panel.classList.add('open');
-    console.log('Panel class added:', panel.classList); // デバッグ用
     
-    // ハンバーガーメニューを閉じる
-    const menu = document.getElementById('hamburger-menu');
-    if (menu) {
-        menu.classList.remove('open');
-    }
-    
-    // オーバーレイを非表示
-    const overlay = document.getElementById('overlay');
-    if (overlay) {
-        overlay.classList.remove('show');
-    }
-    
-    // スマホの場合、他のUIを非表示
-    if (window.innerWidth <= 768) {
-        const topBar = document.getElementById('top-bar');
-        const categoryFilter = document.getElementById('category-filter');
-        const sidebar = document.getElementById('sidebar');
-        if (topBar) topBar.style.display = 'none';
-        if (categoryFilter) categoryFilter.style.display = 'none';
-        if (sidebar) sidebar.classList.remove('open');
-    }
+    // bodyのスクロールを無効化（スマホ用）
+    document.body.style.overflow = 'hidden';
     
     initializeFilters();
     filterSpotList();
@@ -1333,21 +1300,58 @@ function openRoutePlanner() {
 
 function closeRoutePlanner() {
     const panel = document.getElementById('route-planner-panel');
-    panel.classList.remove('open');
+    if (panel) panel.classList.remove('open');
     
     clearSelection();
     
-    document.getElementById('route-anime-filter').value = 'all';
-    document.getElementById('route-area-filter').value = 'all';
-    document.getElementById('route-search-input').value = '';
+    const animeFilter = document.getElementById('route-anime-filter');
+    const areaFilter = document.getElementById('route-area-filter');
+    const searchInput = document.getElementById('route-search-input');
+    const routeResult = document.getElementById('route-result');
     
-    document.getElementById('route-result').style.display = 'none';
+    if (animeFilter) animeFilter.value = 'all';
+    if (areaFilter) areaFilter.value = 'all';
+    if (searchInput) searchInput.value = '';
+    if (routeResult) routeResult.style.display = 'none';
     
-    // UIを再表示
-    const topBar = document.getElementById('top-bar');
-    const categoryFilter = document.getElementById('category-filter');
-    if (topBar) topBar.style.display = '';
-    if (categoryFilter) categoryFilter.style.display = '';
+    // bodyのスクロールを有効化
+    document.body.style.overflow = '';
+}
+
+// 全てのパネルを閉じるヘルパー関数
+function closeAllPanels() {
+    // ハンバーガーメニュー
+    const menu = document.getElementById('hamburger-menu');
+    if (menu) menu.classList.remove('open');
+    
+    // オーバーレイ
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.classList.remove('show');
+    
+    // サイドバー
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+    
+    // 詳細パネル
+    const detailPanel = document.getElementById('detail-panel');
+    if (detailPanel) detailPanel.classList.remove('show');
+    
+    // AIパネル
+    const aiPanel = document.getElementById('ai-panel');
+    if (aiPanel) aiPanel.classList.remove('show');
+    aiPanelOpen = false;
+    
+    // おすすめサイドバー
+    const recommendSidebar = document.getElementById('recommend-sidebar');
+    if (recommendSidebar) recommendSidebar.classList.remove('show');
+    
+    // 履歴サイドバー
+    const historySidebar = document.getElementById('history-sidebar');
+    if (historySidebar) historySidebar.classList.remove('show');
+    
+    // 画像検索パネル
+    const imageSearchPanel = document.getElementById('image-search-panel');
+    if (imageSearchPanel) imageSearchPanel.classList.remove('open');
 }
 
 function initializeFilters() {
