@@ -1294,20 +1294,37 @@ function showNotification(message) {
 // ========================================
 
 function openRoutePlanner() {
-    const panel = document.getElementById('route-planner-panel');
-    panel.classList.add('open');
+    console.log('openRoutePlanner called'); // デバッグ用
     
+    const panel = document.getElementById('route-planner-panel');
+    if (!panel) {
+        console.error('route-planner-panel not found!');
+        return;
+    }
+    
+    panel.classList.add('open');
+    console.log('Panel class added:', panel.classList); // デバッグ用
+    
+    // ハンバーガーメニューを閉じる
     const menu = document.getElementById('hamburger-menu');
     if (menu) {
         menu.classList.remove('open');
+    }
+    
+    // オーバーレイを非表示
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.classList.remove('show');
     }
     
     // スマホの場合、他のUIを非表示
     if (window.innerWidth <= 768) {
         const topBar = document.getElementById('top-bar');
         const categoryFilter = document.getElementById('category-filter');
+        const sidebar = document.getElementById('sidebar');
         if (topBar) topBar.style.display = 'none';
         if (categoryFilter) categoryFilter.style.display = 'none';
+        if (sidebar) sidebar.classList.remove('open');
     }
     
     initializeFilters();
