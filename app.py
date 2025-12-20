@@ -163,17 +163,21 @@ def ai_search():
         if not user_question:
             return jsonify({'error': ''}), 400
         
-        print(f"\n : {user_question}")
+        print(f"\n質問: {user_question}")
         
-        intent_prompt = f"""JSON:
-{{"animes": [""], "locations": [""], "keywords": [""]}}
+        intent_prompt = f"""以下の質問からアニメ名、地名、キーワードを抽出してJSON形式で返してください。
 
-:
-"" → {{"animes": [], "locations": ["", ""], "keywords": [""]}}
-"Your Name locations" → {{"animes": [""], "locations": [], "keywords": []}}
+出力形式:
+{{"animes": ["アニメ名"], "locations": ["地名"], "keywords": ["キーワード"]}}
 
-: {user_question}
-JSON:"""
+例:
+"京都のアニメ聖地" → {{"animes": [], "locations": ["京都"], "keywords": ["聖地"]}}
+"君の名はの聖地" → {{"animes": ["君の名は"], "locations": [], "keywords": ["聖地"]}}
+"岐阜県のアニメ" → {{"animes": [], "locations": ["岐阜"], "keywords": ["アニメ"]}}
+"大阪で行けるアニメ聖地" → {{"animes": [], "locations": ["大阪"], "keywords": ["聖地"]}}
+
+質問: {user_question}
+JSON形式で回答:"""
 
         intent_response = client.chat.completions.create(
             messages=[{"role": "user", "content": intent_prompt}],
@@ -194,14 +198,14 @@ JSON:"""
             locations = []
             keywords = user_question.split()[:3]
         
-        print(f" : {animes},  : {locations}")
+        print(f"抽出結果 - アニメ: {animes}, 地名: {locations}")
         
         conn = get_db_connection()
         spots_data = []
         
         if animes:
             for anime in animes:
-                results = conn.execute('SELECT * FROM spots WHERE anime_name LIKE ? LIMIT 15', [f'%{anime}%']).fetchall()
+                results = conn.execute('SELECT * FROM spots WHERE anime_name LIKE ? ORDER BY RANDOM() LIMIT 15', [f'%{anime}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
         
         if locations:
@@ -209,6 +213,7 @@ JSON:"""
                 results = conn.execute('''
                     SELECT * FROM spots 
                     WHERE address LIKE ? OR name LIKE ? OR note LIKE ?
+                    ORDER BY RANDOM()
                     LIMIT 20
                 ''', [f'%{loc}%', f'%{loc}%', f'%{loc}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
@@ -218,6 +223,7 @@ JSON:"""
                 results = conn.execute('''
                     SELECT * FROM spots 
                     WHERE LOWER(name) LIKE ? OR LOWER(anime_name) LIKE ? OR LOWER(address) LIKE ?
+                    ORDER BY RANDOM()
                     LIMIT 10
                 ''', [f'%{kw.lower()}%', f'%{kw.lower()}%', f'%{kw.lower()}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
@@ -231,7 +237,7 @@ JSON:"""
         spots_data = unique
         
         if not spots_data:
-            spots_data = [dict(row) for row in conn.execute('SELECT * FROM spots LIMIT 10').fetchall()]
+            spots_data = [dict(row) for row in conn.execute('SELECT * FROM spots ORDER BY RANDOM() LIMIT 10').fetchall()]
         
         conn.close()
         
@@ -310,7 +316,7 @@ def ai_recommend():
         if not history:
             return jsonify({'error': ''}), 400
         
-        print(f"\n : {viewed_animes}")
+        print(f"\n閲覧済みアニメ: {viewed_animes}")
         
         conn = get_db_connection()
         
@@ -319,13 +325,17 @@ def ai_recommend():
         
         unviewed_animes = [anime for anime in all_anime_names if anime not in viewed_animes]
         
-        print(f" : {unviewed_animes}")
+        print(f"未視聴アニメ: {unviewed_animes}")
         
         if not unviewed_animes:
             return jsonify({'recommendation': '', 'language': language})
         
+        # ランダムに10作品選択
+        import random
+        selected_animes = random.sample(unviewed_animes, min(10, len(unviewed_animes)))
+        
         spots_data = []
-        for anime in unviewed_animes[:10]:
+        for anime in selected_animes:
             result = conn.execute('SELECT * FROM spots WHERE anime_name = ? ORDER BY RANDOM() LIMIT 1', [anime]).fetchone()
             if result:
                 spots_data.append(dict(result))
