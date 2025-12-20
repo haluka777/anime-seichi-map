@@ -1323,6 +1323,7 @@ function closeAllPanels() {
     // ハンバーガーメニュー
     const menu = document.getElementById('hamburger-menu');
     if (menu) menu.classList.remove('open');
+    hamburgerMenuOpen = false;
     
     // オーバーレイ
     const overlay = document.getElementById('overlay');
@@ -1331,6 +1332,7 @@ function closeAllPanels() {
     // サイドバー
     const sidebar = document.getElementById('sidebar');
     if (sidebar) sidebar.classList.remove('open');
+    sidebarOpen = false;
     
     // 詳細パネル
     const detailPanel = document.getElementById('detail-panel');
@@ -1344,14 +1346,23 @@ function closeAllPanels() {
     // おすすめサイドバー
     const recommendSidebar = document.getElementById('recommend-sidebar');
     if (recommendSidebar) recommendSidebar.classList.remove('show');
+    recommendSidebarOpen = false;
     
     // 履歴サイドバー
     const historySidebar = document.getElementById('history-sidebar');
     if (historySidebar) historySidebar.classList.remove('show');
+    historySidebarOpen = false;
     
     // 画像検索パネル
     const imageSearchPanel = document.getElementById('image-search-panel');
     if (imageSearchPanel) imageSearchPanel.classList.remove('open');
+    
+    // ルートプランナー（追加）
+    const routePlanner = document.getElementById('route-planner-panel');
+    if (routePlanner) routePlanner.classList.remove('open');
+    
+    // bodyのスクロールを有効化
+    document.body.style.overflow = '';
 }
 
 function initializeFilters() {
