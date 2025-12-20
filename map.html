@@ -84,6 +84,17 @@
             </button>
         </div>
 
+        <!-- 言語切替セクション（スマホ用） -->
+        <div id="menu-language-section" class="menu-section-box">
+            <div class="menu-section-title">🌐 言語 / Language</div>
+            <div id="menu-language-selector">
+                <button class="menu-lang-btn active" data-lang="ja" onclick="changeLanguage('ja')">🇯🇵 日本語</button>
+                <button class="menu-lang-btn" data-lang="en" onclick="changeLanguage('en')">🇬🇧 English</button>
+                <button class="menu-lang-btn" data-lang="zh" onclick="changeLanguage('zh')">🇨🇳 中文</button>
+                <button class="menu-lang-btn" data-lang="ko" onclick="changeLanguage('ko')">🇰🇷 한국어</button>
+            </div>
+        </div>
+
         <div class="menu-item" onclick="showHistory()">
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
