@@ -43,14 +43,20 @@ function changeLanguage(lang) {
     currentLanguage = lang;
     console.log('言語を変更しました:', lang);
     
-    // 言語選択ボタンのアクティブ状態を更新
+    // 言語選択ボタンのアクティブ状態を更新（トップバー）
     document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    const selectedBtn = document.querySelector(`[data-lang="${lang}"]`);
-    if (selectedBtn) {
-        selectedBtn.classList.add('active');
-    }
+    
+    // メニュー内の言語ボタンも更新
+    document.querySelectorAll('.menu-lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 両方のボタンをアクティブに
+    document.querySelectorAll(`[data-lang="${lang}"]`).forEach(btn => {
+        btn.classList.add('active');
+    });
 }
 
 // テキストを翻訳する関数
