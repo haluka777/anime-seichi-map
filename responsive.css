@@ -1,86 +1,119 @@
 /* ========================================
    スマホ完全対応 レスポンシブCSS
-   このファイルをstyles.cssの最後に追加
    ======================================== */
 
 /* ========================================
-   タブレット (768px以下)
+   タブレット・スマホ共通 (768px以下)
    ======================================== */
 @media screen and (max-width: 768px) {
     
-    /* ----- トップバー（検索・言語） ----- */
+    /* ----- トップバー ----- */
     #top-bar {
-        left: 10px;
-        right: 10px;
-        width: auto;
-        flex-wrap: wrap;
-        gap: 8px;
+        position: fixed !important;
+        top: 10px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        z-index: 100 !important;
     }
     
     #search-bar {
-        width: 100%;
-        max-width: none;
-        order: 1;
+        width: 100% !important;
+        max-width: none !important;
     }
     
     #language-selector {
-        width: 100%;
-        justify-content: center;
-        order: 2;
+        width: 100% !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
     }
     
     .lang-btn {
-        padding: 6px 8px;
-        font-size: 12px;
+        padding: 6px 8px !important;
+        font-size: 11px !important;
     }
     
     /* ----- カテゴリフィルタ ----- */
     #category-filter {
-        top: auto;
-        bottom: 80px;
-        left: 10px;
-        right: 10px;
-        width: auto;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        position: fixed !important;
+        bottom: 70px !important;
+        top: auto !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        z-index: 100 !important;
     }
     
     .category-btn {
-        padding: 6px 10px;
-        font-size: 12px;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        flex-shrink: 0 !important;
     }
     
     .category-text {
-        display: none;
+        display: none !important;
+    }
+    
+    /* ----- オーバーレイ ----- */
+    #overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 9998 !important;
+        display: none !important;
+    }
+    
+    #overlay.show {
+        display: block !important;
     }
     
     /* ----- ハンバーガーメニュー ----- */
     #hamburger-menu {
+        position: fixed !important;
+        top: 0 !important;
+        left: -100% !important;
         width: 85vw !important;
         max-width: 320px !important;
-        left: -85vw !important;
-        z-index: 10000 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 9999 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        transition: left 0.3s ease !important;
     }
     
     #hamburger-menu.open {
         left: 0 !important;
     }
     
-    /* ----- オーバーレイ ----- */
-    #overlay {
-        z-index: 9999 !important;
-    }
-    
-    #overlay.show {
-        display: block;
+    .menu-item {
+        padding: 16px 20px !important;
+        min-height: 50px !important;
     }
     
     /* ----- 左サイドバー（聖地リスト） ----- */
     #sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        left: -100vw !important;
-        z-index: 10001 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10000 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        transition: left 0.3s ease !important;
     }
     
     #sidebar.open {
@@ -89,10 +122,18 @@
     
     /* ----- 詳細パネル ----- */
     #detail-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10002 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10001 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        transition: right 0.3s ease !important;
     }
     
     #detail-panel.show {
@@ -101,13 +142,18 @@
     
     /* ----- AI検索パネル ----- */
     #ai-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10003 !important;
-        top: 0 !important;
         height: 100vh !important;
-        height: 100dvh !important; /* iOS Safari対応 */
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10002 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        transition: right 0.3s ease !important;
     }
     
     #ai-panel.show {
@@ -115,85 +161,86 @@
     }
     
     #ai-panel-header {
-        padding: 12px 15px;
-        position: sticky;
-        top: 0;
-        background: white;
-        z-index: 10;
+        padding: 12px 15px !important;
+        flex-shrink: 0 !important;
+        border-bottom: 1px solid #e0e0e0 !important;
     }
     
     #ai-chat-area {
-        padding: 10px;
-        height: calc(100vh - 140px);
-        height: calc(100dvh - 140px);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 10px !important;
     }
     
     #ai-input-area {
-        position: sticky;
-        bottom: 0;
-        padding: 10px;
-        background: white;
-        border-top: 1px solid #e0e0e0;
+        flex-shrink: 0 !important;
+        padding: 10px !important;
+        border-top: 1px solid #e0e0e0 !important;
+        background: white !important;
     }
     
     #ai-question-input {
         font-size: 16px !important; /* iOS ズーム防止 */
     }
     
-    /* ----- ルートプランナー ----- */
-    .side-panel,
-    #route-planner-panel {
+    /* ----- ルートプランナー（最重要） ----- */
+    #route-planner-panel,
+    #route-planner-panel.side-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10004 !important;
-        top: 0 !important;
         height: 100vh !important;
         height: 100dvh !important;
-        position: fixed !important;
         background: white !important;
+        z-index: 10003 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        transition: right 0.3s ease !important;
     }
     
-    .side-panel.open,
     #route-planner-panel.open {
         right: 0 !important;
     }
     
-    .panel-header {
-        padding: 12px 15px;
-        position: sticky;
-        top: 0;
-        background: #f8f9fa;
-        z-index: 10;
+    #route-planner-panel .panel-header {
+        flex-shrink: 0 !important;
+        padding: 15px !important;
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
     }
     
-    .panel-header h2 {
-        font-size: 16px;
+    #route-planner-panel .panel-header h2 {
+        font-size: 16px !important;
+        margin: 0 !important;
     }
     
-    .close-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
-        min-width: 40px; /* タップしやすく */
-    }
-    
-    .panel-content {
-        padding: 15px;
-        height: calc(100vh - 60px);
-        height: calc(100dvh - 60px);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+    #route-planner-panel .panel-content {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 15px !important;
     }
     
     /* ----- 画像検索パネル ----- */
-    #image-search-panel {
+    #image-search-panel,
+    #image-search-panel.side-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10004 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10003 !important;
+        transition: right 0.3s ease !important;
     }
     
     #image-search-panel.open {
@@ -202,10 +249,16 @@
     
     /* ----- おすすめサイドバー ----- */
     #recommend-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10004 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10001 !important;
+        transition: right 0.3s ease !important;
     }
     
     #recommend-sidebar.show {
@@ -214,39 +267,64 @@
     
     /* ----- 履歴サイドバー ----- */
     #history-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
         width: 100vw !important;
         max-width: none !important;
-        right: -100vw !important;
-        z-index: 10004 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        background: white !important;
+        z-index: 10001 !important;
+        transition: right 0.3s ease !important;
     }
     
     #history-sidebar.show {
         right: 0 !important;
     }
     
-    /* ----- フィルター要素 ----- */
-    .filter-select,
-    .filter-input {
-        font-size: 16px !important; /* iOS ズーム防止 */
-        padding: 12px;
+    /* ----- 閉じるボタン ----- */
+    .close-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        font-size: 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: none !important;
+        border: none !important;
+        cursor: pointer !important;
+        border-radius: 50% !important;
     }
     
-    /* ----- ボタン全般 ----- */
+    .close-btn:active {
+        background: #e0e0e0 !important;
+    }
+    
+    /* ----- フォーム要素 ----- */
+    .filter-select,
+    .filter-input,
+    input[type="text"],
+    select {
+        font-size: 16px !important; /* iOS ズーム防止 */
+        padding: 12px !important;
+        min-height: 44px !important;
+    }
+    
+    /* ----- ボタン ----- */
     .primary-btn,
     .filter-button,
     button {
-        min-height: 44px; /* タップしやすい最小サイズ */
+        min-height: 44px !important;
+        padding: 12px 16px !important;
     }
     
-    /* ----- メニューアイテム ----- */
-    .menu-item {
-        padding: 15px 20px;
-        min-height: 50px;
-    }
-    
-    /* ----- 聖地リストアイテム ----- */
-    .spot-item {
-        padding: 12px;
+    /* ----- AIチャット入力 ----- */
+    #ai-input-area {
+        position: sticky !important;
+        bottom: 0 !important;
     }
 }
 
@@ -256,68 +334,24 @@
 @media screen and (max-width: 480px) {
     
     #top-bar {
-        top: 5px;
-        left: 5px;
-        right: 5px;
-    }
-    
-    #search-bar {
-        padding: 6px 10px;
-    }
-    
-    #search-input {
-        font-size: 14px;
+        top: 5px !important;
+        left: 5px !important;
+        right: 5px !important;
     }
     
     .lang-btn {
-        padding: 5px 6px;
-        font-size: 11px;
+        padding: 5px 6px !important;
+        font-size: 10px !important;
     }
     
     #category-filter {
-        bottom: 70px;
-        left: 5px;
-        right: 5px;
-        padding: 4px 6px;
-        gap: 4px;
+        bottom: 65px !important;
+        left: 5px !important;
+        right: 5px !important;
     }
     
     .category-btn {
-        padding: 5px 8px;
-        font-size: 11px;
-    }
-    
-    .category-icon {
-        font-size: 12px;
-    }
-    
-    /* パネル内のフォント調整 */
-    .panel-header h2 {
-        font-size: 15px;
-    }
-    
-    #ai-panel-header h2 {
-        font-size: 15px;
-    }
-}
-
-/* ========================================
-   ランドスケープ（横向き）対応
-   ======================================== */
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    
-    #ai-chat-area {
-        height: calc(100vh - 120px);
-        height: calc(100dvh - 120px);
-    }
-    
-    .panel-content {
-        height: calc(100vh - 50px);
-        height: calc(100dvh - 50px);
-    }
-    
-    #category-filter {
-        bottom: 60px;
+        padding: 5px 8px !important;
     }
 }
 
@@ -325,35 +359,35 @@
    iOS Safari 対応
    ======================================== */
 @supports (-webkit-touch-callout: none) {
-    /* iOS専用スタイル */
-    
     #ai-panel,
-    .side-panel,
-    #route-planner-panel {
-        height: -webkit-fill-available;
-    }
-    
-    #ai-chat-area,
-    .panel-content {
-        -webkit-overflow-scrolling: touch;
+    #route-planner-panel,
+    #sidebar,
+    #detail-panel,
+    #hamburger-menu,
+    #image-search-panel,
+    #recommend-sidebar,
+    #history-sidebar {
+        height: -webkit-fill-available !important;
     }
 }
 
 /* ========================================
-   タッチデバイス hover 無効化
+   タッチデバイス用
    ======================================== */
 @media (hover: none) and (pointer: coarse) {
     .menu-item:hover,
     .spot-item:hover,
     .category-btn:hover,
-    .lang-btn:hover {
-        background-color: inherit;
+    .lang-btn:hover,
+    .close-btn:hover {
+        background-color: inherit !important;
     }
     
     .menu-item:active,
     .spot-item:active,
     .category-btn:active,
-    .lang-btn:active {
-        background-color: #e8eaed;
+    .lang-btn:active,
+    .close-btn:active {
+        background-color: #e8eaed !important;
     }
 }
