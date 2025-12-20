@@ -7,15 +7,13 @@
    ======================================== */
 @media screen and (max-width: 768px) {
     
-    /* ----- トップバー ----- */
+    /* ----- トップバー（検索バーのみ表示） ----- */
     #top-bar {
         position: fixed !important;
         top: 10px !important;
         left: 10px !important;
         right: 10px !important;
         width: auto !important;
-        flex-direction: column !important;
-        gap: 8px !important;
         z-index: 100 !important;
     }
     
@@ -24,22 +22,20 @@
         max-width: none !important;
     }
     
+    /* スマホでは言語セレクターを非表示 */
     #language-selector {
-        width: 100% !important;
-        justify-content: center !important;
-        flex-wrap: wrap !important;
-        gap: 4px !important;
+        display: none !important;
     }
     
-    .lang-btn {
-        padding: 6px 8px !important;
-        font-size: 11px !important;
+    /* メニュー内の言語セクションを表示 */
+    #menu-language-section {
+        display: block !important;
     }
     
-    /* ----- カテゴリフィルタ ----- */
+    /* ----- カテゴリフィルタ（下部に配置） ----- */
     #category-filter {
         position: fixed !important;
-        bottom: 70px !important;
+        bottom: 15px !important;
         top: auto !important;
         left: 10px !important;
         right: 10px !important;
@@ -47,16 +43,25 @@
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
         z-index: 100 !important;
+        background: white !important;
+        border-radius: 25px !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
     }
     
     .category-btn {
-        padding: 6px 10px !important;
-        font-size: 12px !important;
+        padding: 8px 12px !important;
+        font-size: 14px !important;
         flex-shrink: 0 !important;
+        border-radius: 20px !important;
     }
     
     .category-text {
         display: none !important;
+    }
+    
+    .category-icon {
+        font-size: 16px !important;
     }
     
     /* ----- オーバーレイ ----- */
@@ -98,6 +103,42 @@
     .menu-item {
         padding: 16px 20px !important;
         min-height: 50px !important;
+    }
+    
+    /* メニュー内言語セクション */
+    .menu-section-box {
+        padding: 15px 20px !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        background: #f8f9fa !important;
+    }
+    
+    .menu-section-title {
+        font-size: 14px !important;
+        color: #666 !important;
+        margin-bottom: 10px !important;
+        font-weight: 500 !important;
+    }
+    
+    #menu-language-selector {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    
+    .menu-lang-btn {
+        padding: 8px 12px !important;
+        border: 1px solid #ddd !important;
+        border-radius: 20px !important;
+        background: white !important;
+        font-size: 13px !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+    }
+    
+    .menu-lang-btn.active {
+        background: #4285f4 !important;
+        color: white !important;
+        border-color: #4285f4 !important;
     }
     
     /* ----- 左サイドバー（聖地リスト） ----- */
@@ -181,10 +222,10 @@
     }
     
     #ai-question-input {
-        font-size: 16px !important; /* iOS ズーム防止 */
+        font-size: 16px !important;
     }
     
-    /* ----- ルートプランナー（最重要） ----- */
+    /* ----- ルートプランナー ----- */
     #route-planner-panel,
     #route-planner-panel.side-panel {
         position: fixed !important;
@@ -308,7 +349,7 @@
     .filter-input,
     input[type="text"],
     select {
-        font-size: 16px !important; /* iOS ズーム防止 */
+        font-size: 16px !important;
         padding: 12px !important;
         min-height: 44px !important;
     }
@@ -329,6 +370,16 @@
 }
 
 /* ========================================
+   PC表示時（769px以上）
+   ======================================== */
+@media screen and (min-width: 769px) {
+    /* メニュー内の言語セクションを非表示 */
+    #menu-language-section {
+        display: none !important;
+    }
+}
+
+/* ========================================
    スマホ縦向き (480px以下)
    ======================================== */
 @media screen and (max-width: 480px) {
@@ -339,19 +390,19 @@
         right: 5px !important;
     }
     
-    .lang-btn {
-        padding: 5px 6px !important;
-        font-size: 10px !important;
-    }
-    
     #category-filter {
-        bottom: 65px !important;
+        bottom: 10px !important;
         left: 5px !important;
         right: 5px !important;
+        padding: 6px 10px !important;
     }
     
     .category-btn {
-        padding: 5px 8px !important;
+        padding: 6px 10px !important;
+    }
+    
+    .category-icon {
+        font-size: 14px !important;
     }
 }
 
@@ -379,7 +430,8 @@
     .spot-item:hover,
     .category-btn:hover,
     .lang-btn:hover,
-    .close-btn:hover {
+    .close-btn:hover,
+    .menu-lang-btn:hover {
         background-color: inherit !important;
     }
     
@@ -387,7 +439,8 @@
     .spot-item:active,
     .category-btn:active,
     .lang-btn:active,
-    .close-btn:active {
+    .close-btn:active,
+    .menu-lang-btn:active {
         background-color: #e8eaed !important;
     }
 }
