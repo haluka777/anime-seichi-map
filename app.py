@@ -15,7 +15,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 # API
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "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"
 client = Groq(api_key=GROQ_API_KEY)
 
 MODEL_NAME = "llama-3.3-70b-versatile"
