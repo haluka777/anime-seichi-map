@@ -5,6 +5,7 @@ from groq import Groq
 import json
 import re
 import requests
+import os
 from math import radians, sin, cos, sqrt, atan2
 import base64
 from io import BytesIO
@@ -14,7 +15,7 @@ from PIL import Image
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-# API
+# API（環境変数から取得）
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -41,28 +42,6 @@ def index():
 def get_spots():
     conn = get_db_connection()
     spots = conn.execute('SELECT * FROM spots').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in spots])
-
-@app.route('/api/genres', methods=['GET'])
-def get_genres():
-    """ジャンル一覧を取得"""
-    conn = get_db_connection()
-    genres = conn.execute('SELECT id, name FROM genre ORDER BY id').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in genres])
-
-@app.route('/api/anime-by-genre/<int:genre_id>', methods=['GET'])
-def get_anime_by_genre(genre_id):
-    """指定ジャンルのアニメと聖地を取得"""
-    conn = get_db_connection()
-    spots = conn.execute('''
-        SELECT DISTINCT s.* FROM spots s
-        JOIN anime a ON s.anime_name = a.anime
-        JOIN anime_genre ag ON a.id = ag.anime_id
-        WHERE ag.genre_id = ?
-        ORDER BY s.anime_name
-    ''', [genre_id]).fetchall()
     conn.close()
     return jsonify([dict(row) for row in spots])
 
@@ -185,29 +164,16 @@ def ai_search():
         if not user_question:
             return jsonify({'error': ''}), 400
         
-        print(f"\n質問: {user_question}")
+        print(f"\n : {user_question}")
         
-        # ジャンル一覧を取得
-        conn = get_db_connection()
-        genres = conn.execute('SELECT id, name FROM genre').fetchall()
-        genre_list = ', '.join([f'"{g["name"]}"' for g in genres])
-        
-        intent_prompt = f"""以下の質問からアニメ名、地名、キーワード、ジャンルを抽出してJSON形式で返してください。
+        intent_prompt = f"""JSON:
+{{"animes": [""], "locations": [""], "keywords": [""]}}
 
-出力形式:
-{{"animes": ["アニメ名"], "locations": ["地名"], "keywords": ["キーワード"], "genres": ["ジャンル"]}}
+:
+"" → {{"animes": [], "locations": ["", ""], "keywords": [""]}}
+"Your Name locations" → {{"animes": [""], "locations": [], "keywords": []}}
 
-利用可能なジャンル: {genre_list}
-
-例:
-"京都のアニメ聖地" → {{"animes": [], "locations": ["京都"], "keywords": ["聖地"], "genres": []}}
-"日常系アニメの聖地" → {{"animes": [], "locations": [], "keywords": [], "genres": ["日常"]}}
-"戦闘シーンがあるアニメの聖地" → {{"animes": [], "locations": [], "keywords": [], "genres": ["戦闘"]}}
-"ラブコメの聖地を教えて" → {{"animes": [], "locations": [], "keywords": [], "genres": ["ラブコメ"]}}
-"スポーツアニメの聖地" → {{"animes": [], "locations": [], "keywords": [], "genres": ["スポーツ"]}}
-"君の名はの聖地" → {{"animes": ["君の名は"], "locations": [], "keywords": [], "genres": []}}
-
-質問: {user_question}
+: {user_question}
 JSON:"""
 
         intent_response = client.chat.completions.create(
@@ -224,56 +190,35 @@ JSON:"""
             animes = intent.get('animes', [])
             locations = intent.get('locations', [])
             keywords = intent.get('keywords', [])
-            genres = intent.get('genres', [])
         except:
             animes = []
             locations = []
             keywords = user_question.split()[:3]
-            genres = []
         
-        print(f"アニメ: {animes}, 場所: {locations}, ジャンル: {genres}")
+        print(f" : {animes},  : {locations}")
         
+        conn = get_db_connection()
         spots_data = []
         
-        # ジャンル検索
-        if genres:
-            for genre_name in genres:
-                results = conn.execute('''
-                    SELECT DISTINCT s.* FROM spots s
-                    JOIN anime a ON s.anime_name = a.anime
-                    JOIN anime_genre ag ON a.id = ag.anime_id
-                    JOIN genre g ON ag.genre_id = g.id
-                    WHERE g.name LIKE ?
-                    ORDER BY RANDOM()
-                    LIMIT 20
-                ''', [f'%{genre_name}%']).fetchall()
-                spots_data.extend([dict(row) for row in results])
-                print(f"ジャンル '{genre_name}' で {len(results)} 件取得")
-        
-        # アニメ名検索
         if animes:
             for anime in animes:
-                results = conn.execute('SELECT * FROM spots WHERE anime_name LIKE ? ORDER BY RANDOM() LIMIT 15', [f'%{anime}%']).fetchall()
+                results = conn.execute('SELECT * FROM spots WHERE anime_name LIKE ? LIMIT 15', [f'%{anime}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
         
-        # 場所検索
         if locations:
             for loc in locations:
                 results = conn.execute('''
                     SELECT * FROM spots 
                     WHERE address LIKE ? OR name LIKE ? OR note LIKE ?
-                    ORDER BY RANDOM()
                     LIMIT 20
                 ''', [f'%{loc}%', f'%{loc}%', f'%{loc}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
         
-        # キーワード検索（他で見つからなかった場合）
         if not spots_data and keywords:
             for kw in keywords[:3]:
                 results = conn.execute('''
                     SELECT * FROM spots 
                     WHERE LOWER(name) LIKE ? OR LOWER(anime_name) LIKE ? OR LOWER(address) LIKE ?
-                    ORDER BY RANDOM()
                     LIMIT 10
                 ''', [f'%{kw.lower()}%', f'%{kw.lower()}%', f'%{kw.lower()}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
@@ -366,73 +311,35 @@ def ai_recommend():
         if not history:
             return jsonify({'error': ''}), 400
         
-        print(f"\n閲覧済み: {viewed_animes}")
+        print(f"\n : {viewed_animes}")
         
         conn = get_db_connection()
-        
-        # 閲覧済みアニメのジャンルを取得
-        viewed_genres = []
-        for anime_name in viewed_animes:
-            genres = conn.execute('''
-                SELECT DISTINCT g.name FROM genre g
-                JOIN anime_genre ag ON g.id = ag.genre_id
-                JOIN anime a ON ag.anime_id = a.id
-                WHERE a.anime = ?
-            ''', [anime_name]).fetchall()
-            viewed_genres.extend([g['name'] for g in genres])
-        
-        # よく見ているジャンルをカウント
-        from collections import Counter
-        genre_counts = Counter(viewed_genres)
-        favorite_genres = [g for g, c in genre_counts.most_common(3)]
-        print(f"好みのジャンル: {favorite_genres}")
         
         all_animes_query = conn.execute('SELECT DISTINCT anime_name FROM spots WHERE anime_name IS NOT NULL').fetchall()
         all_anime_names = [row['anime_name'] for row in all_animes_query]
         
         unviewed_animes = [anime for anime in all_anime_names if anime not in viewed_animes]
         
-        print(f"未視聴: {len(unviewed_animes)}作品")
+        print(f" : {unviewed_animes}")
         
         if not unviewed_animes:
             return jsonify({'recommendation': '', 'language': language})
         
-        # 好みのジャンルに合う未視聴アニメを優先
         spots_data = []
-        
-        # 好みのジャンルからおすすめを取得
-        if favorite_genres:
-            for genre in favorite_genres:
-                results = conn.execute('''
-                    SELECT DISTINCT s.*, g.name as genre_name FROM spots s
-                    JOIN anime a ON s.anime_name = a.anime
-                    JOIN anime_genre ag ON a.id = ag.anime_id
-                    JOIN genre g ON ag.genre_id = g.id
-                    WHERE g.name = ? AND s.anime_name NOT IN ({})
-                    ORDER BY RANDOM()
-                    LIMIT 5
-                '''.format(','.join('?' * len(viewed_animes))), [genre] + viewed_animes).fetchall()
-                spots_data.extend([dict(row) for row in results])
-        
-        # 足りなければランダムに追加
-        if len(spots_data) < 10:
-            import random
-            selected_animes = random.sample(unviewed_animes, min(10 - len(spots_data), len(unviewed_animes)))
-            for anime in selected_animes:
-                result = conn.execute('SELECT * FROM spots WHERE anime_name = ? ORDER BY RANDOM() LIMIT 1', [anime]).fetchone()
-                if result:
-                    spots_data.append(dict(result))
+        for anime in unviewed_animes[:10]:
+            result = conn.execute('SELECT * FROM spots WHERE anime_name = ? ORDER BY RANDOM() LIMIT 1', [anime]).fetchone()
+            if result:
+                spots_data.append(dict(result))
         
         conn.close()
         
         lang_map = {'ja': '日本語', 'en': 'English', 'zh': '中文', 'ko': '한국어'}
         
-        summary = [{'id': s['id'], 'name': s['name'][:30], 'anime': s['anime_name'][:30], 'address': s['address'][:40], 'genre': s.get('genre_name', '')} for s in spots_data]
+        summary = [{'id': s['id'], 'name': s['name'][:30], 'anime': s['anime_name'][:30], 'address': s['address'][:40]} for s in spots_data]
         
         prompt = f"""アニメ聖地のおすすめを{lang_map.get(language, '日本語')}で。
 
 【閲覧済み】{', '.join(viewed_animes)}
-【好みのジャンル】{', '.join(favorite_genres) if favorite_genres else '分析中'}
 
 【未視聴候補（複数アニメ）】
 {json.dumps(summary, ensure_ascii=False, indent=2)}
@@ -440,7 +347,7 @@ def ai_recommend():
 【重要】
 1. **異なるアニメから5つ選ぶ**
 2. 同じアニメ不可
-3. 好みのジャンルを考慮して提案
+3. 多様なジャンル提案
 4. 各聖地の魅力説明
 5. おすすめ理由明確に
 
