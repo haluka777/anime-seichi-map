@@ -653,19 +653,12 @@
             overflow-y: auto;
         }
 
-        /* ========== トップバー（検索バー + 言語選択の横並びコンテナ） ========== */
-        #top-bar {
+        /* ========== 検索バー ========== */
+        #search-bar {
             position: fixed;
             top: 10px;
             left: 10px;
             z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* ========== 検索バー ========== */
-        #search-bar {
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -673,38 +666,7 @@
             align-items: center;
             padding: 8px 16px;
             width: 400px;
-        }
-
-        /* ========== 言語選択（検索バーの右横） ========== */
-        #language-selector {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            padding: 4px;
-        }
-
-        .lang-btn {
-            padding: 8px 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #5f6368;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .lang-btn:hover {
-            background-color: #f1f3f4;
-        }
-
-        .lang-btn.active {
-            background-color: #e8f0fe;
-            color: #1a73e8;
+            max-width: calc(100% - 20px);
         }
 
         /* ========== カテゴリフィルタ（2段目・独立） ========== */
@@ -1563,11 +1525,6 @@
         width: 300px;
     }
     
-    .lang-btn {
-        padding: 6px 8px;
-        font-size: 12px;
-    }
-    
     .category-text {
         display: none;
     }
@@ -1578,22 +1535,12 @@
 }
 
 @media (max-width: 700px) {
-    #top-bar {
-        flex-wrap: wrap;
-        right: 10px;
-    }
-    
     #search-bar {
-        width: 100%;
-    }
-    
-    #language-selector {
-        width: 100%;
-        justify-content: center;
+        width: calc(100% - 20px);
     }
     
     #category-filter {
-        top: 115px;
+        top: 70px;
     }
 }
 
@@ -1833,5 +1780,374 @@
     .view-tab {
         padding: 8px;
         font-size: 12px;
+    }
+}
+
+
+
+/* ========================================
+   ジャンルフィルター アコーディオンUI
+   ======================================== */
+#genre-filter-section {
+    margin-top: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.genre-filter-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.genre-filter-header:hover {
+    background: #f0f0f0;
+}
+
+.genre-filter-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+}
+
+#genre-selected-badge {
+    font-size: 11px;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-right: 8px;
+    display: none;
+}
+
+#genre-selected-badge.show {
+    display: inline-block;
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+}
+
+.accordion-icon.open {
+    transform: rotate(180deg);
+}
+
+.genre-filter-content {
+    display: none;
+    padding: 12px;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+}
+
+.genre-filter-content.open {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.genre-btn {
+    padding: 8px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+}
+
+.genre-btn:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.genre-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* スマホ用調整 */
+@media screen and (max-width: 768px) {
+    .genre-filter-header {
+        padding: 10px;
+    }
+    
+    .genre-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .genre-filter-label {
+        font-size: 12px;
+    }
+}
+
+/* ========================================
+   ドロップダウン式言語セレクター
+   ======================================== */
+#language-dropdown {
+    position: relative;
+    z-index: 1000;
+}
+
+#language-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#language-dropdown-btn:hover {
+    background: #f8f9fa;
+    border-color: #ccc;
+}
+
+#current-lang-flag {
+    font-size: 18px;
+}
+
+#current-lang-name {
+    font-weight: 500;
+}
+
+.dropdown-arrow {
+    transition: transform 0.2s;
+}
+
+#language-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+#language-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 160px;
+    overflow: hidden;
+    z-index: 1001;
+}
+
+#language-dropdown-menu.hidden {
+    display: none;
+}
+
+.lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.lang-option:hover {
+    background: #f5f5f5;
+}
+
+.lang-option.active {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+}
+
+.lang-flag {
+    font-size: 20px;
+}
+
+.lang-name {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* スマホ用調整 */
+@media screen and (max-width: 768px) {
+    #language-dropdown-btn {
+        padding: 6px 10px;
+    }
+    
+    #current-lang-name {
+        display: none;
+    }
+    
+    #current-lang-flag {
+        font-size: 22px;
+    }
+    
+    #language-dropdown-menu {
+        right: 0;
+        min-width: 150px;
+    }
+}
+
+/* ========================================
+   言語ボタン（検索バー内）
+   ======================================== */
+#lang-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+#lang-btn:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+/* ========================================
+   言語選択ボトムシートモーダル
+   ======================================== */
+#language-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+#language-modal-overlay.modal-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#language-modal-overlay.modal-hidden #language-modal {
+    transform: translateY(100%);
+}
+
+#language-modal {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 20px 20px 0 0;
+    padding: 16px 20px 30px;
+    transform: translateY(0);
+    transition: transform 0.3s ease-out;
+}
+
+.modal-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.lang-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.lang-modal-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lang-modal-btn:hover {
+    background: #f0f0f0;
+}
+
+.lang-modal-btn.active {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    border-color: #667eea;
+}
+
+.lang-modal-btn .lang-flag {
+    font-size: 28px;
+}
+
+.lang-modal-btn .lang-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* PC用：画面中央に表示 */
+@media screen and (min-width: 769px) {
+    #language-modal-overlay {
+        align-items: center;
+    }
+    
+    #language-modal {
+        border-radius: 16px;
+        max-width: 400px;
+        padding: 24px;
+    }
+    
+    #language-modal-overlay.modal-hidden #language-modal {
+        transform: translateY(20px);
+    }
+    
+    .modal-handle {
+        display: none;
+    }
+    
+    .lang-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* スマホ用 */
+@media screen and (max-width: 768px) {
+    #language-modal {
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    
+    .lang-modal-btn {
+        padding: 12px 14px;
+    }
+    
+    .lang-modal-btn .lang-flag {
+        font-size: 24px;
+    }
+    
+    .lang-modal-btn .lang-name {
+        font-size: 14px;
     }
 }
