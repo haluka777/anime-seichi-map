@@ -9,6 +9,10 @@ let markers = [];
 let currentFilter = 'all';
 let currentSearch = '';
 let currentCategory = 'all';  // カテゴリフィルタ用
+let currentAnimeTab = 'all';  // あいうえおタブ用
+let currentGenreFilter = null;  // ジャンルフィルタ用
+let allGenres = [];  // ジャンル一覧
+let genreSpotIds = [];  // 選択中ジャンルの聖地ID一覧
 let hamburgerMenuOpen = false;
 let sidebarOpen = false;
 let aiPanelOpen = false;
@@ -39,29 +43,57 @@ const categoryKeywords = {
 // ========================================
 
 // 言語設定を変更する関数
-function changeLanguage(lang) {
+// 言語データ
+const languageData = {
+    ja: { flag: '🇯🇵', name: '日本語' },
+    en: { flag: '🇬🇧', name: 'English' },
+    zh: { flag: '🇨🇳', name: '中文' },
+    ko: { flag: '🇰🇷', name: '한국어' },
+    hi: { flag: '🇮🇳', name: 'हिन्दी' },
+    es: { flag: '🇪🇸', name: 'Español' },
+    fr: { flag: '🇫🇷', name: 'Français' },
+    pt: { flag: '🇧🇷', name: 'Português' }
+};
+
+// 言語モーダルを開く
+function openLanguageModal() {
+    const overlay = document.getElementById('language-modal-overlay');
+    overlay.classList.remove('modal-hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// 言語モーダルを閉じる
+function closeLanguageModal() {
+    const overlay = document.getElementById('language-modal-overlay');
+    overlay.classList.add('modal-hidden');
+    document.body.style.overflow = '';
+}
+
+// 言語を選択
+function selectLanguage(lang) {
     currentLanguage = lang;
     console.log('言語を変更しました:', lang);
     
-    // 言語選択ボタンのアクティブ状態を更新（トップバー）
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.remove('active');
+    // ボタン表示を更新
+    const data = languageData[lang];
+    document.getElementById('current-lang-flag').textContent = data.flag;
+    
+    // モーダル内のアクティブ状態を更新
+    document.querySelectorAll('.lang-modal-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
     });
     
-    // メニュー内の言語ボタンも更新
-    document.querySelectorAll('.menu-lang-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // 両方のボタンをアクティブに
-    document.querySelectorAll(`[data-lang="${lang}"]`).forEach(btn => {
-        btn.classList.add('active');
-    });
+    // モーダルを閉じる
+    closeLanguageModal();
     
     // UI全体を翻訳
     if (typeof translateUI === 'function') {
         translateUI();
     }
+}
+
+function changeLanguage(lang) {
+    selectLanguage(lang);
 }
 
 // テキストを翻訳する関数
@@ -229,8 +261,9 @@ function updateMarkers() {
             (spot.address && spot.address.toLowerCase().includes(currentSearch)) ||
             (spot.note && spot.note.toLowerCase().includes(currentSearch)) ||
             (spot.anime_name && spot.anime_name.toLowerCase().includes(currentSearch));
+        const matchesGenre = currentGenreFilter === null || genreSpotIds.includes(spot.id);
         
-        if (matchesAnime && matchesSearch) {
+        if (matchesAnime && matchesSearch && matchesGenre) {
             visibleMarkers.push(marker);
         }
     });
@@ -266,7 +299,8 @@ function getVisibleSpots() {
             (spot.note && spot.note.toLowerCase().includes(currentSearch)) ||
             (spot.anime_name && spot.anime_name.toLowerCase().includes(currentSearch));
         const matchesCat = matchesCategory(spot, currentCategory);
-        return matchesAnime && matchesSearch && matchesCat;
+        const matchesGenre = currentGenreFilter === null || genreSpotIds.includes(spot.id);
+        return matchesAnime && matchesSearch && matchesCat && matchesGenre;
     });
 }
 
@@ -396,26 +430,146 @@ async function loadSpots() {
         displayMap();
         renderList();
         updateCount();
+        
+        // ジャンル一覧を読み込み
+        loadGenres();
     } catch (error) {
         console.error('エラー:', error);
         document.getElementById('loading').textContent = 'サーバーに接続できません';
     }
 }
 
+// ジャンル一覧を読み込み
+async function loadGenres() {
+    try {
+        const response = await fetch('/api/genres');
+        allGenres = await response.json();
+        renderGenreButtons();
+        console.log('✅ ジャンル読み込み:', allGenres.length + '件');
+    } catch (error) {
+        console.error('ジャンル読み込みエラー:', error);
+    }
+}
+
+// ジャンルボタンを描画
+function renderGenreButtons() {
+    const container = document.getElementById('genre-filter');
+    if (!container) return;
+    
+    // ジャンルアイコンマップ
+    const genreIcons = {
+        '戦闘': '⚔️',
+        'ラブコメ': '💕',
+        '日常': '☀️',
+        'SF': '🚀',
+        'ファンタジー': '✨',
+        'スポーツ': '⚽',
+        '音楽': '🎵',
+        '青春': '🌸',
+        'ホラー': '👻'
+    };
+    
+    container.innerHTML = allGenres.map(g => 
+        `<button class="genre-btn" data-id="${g.id}" data-name="${g.name}" onclick="filterByGenre(${g.id}, '${g.name}')">
+            ${genreIcons[g.name] || '🏷️'} ${g.name}
+        </button>`
+    ).join('');
+}
+
+// アコーディオン開閉
+function toggleGenreAccordion() {
+    const content = document.getElementById('genre-filter');
+    const icon = document.getElementById('genre-accordion-icon');
+    
+    const isOpening = !content.classList.contains('open');
+    
+    content.classList.toggle('open');
+    icon.classList.toggle('open');
+    
+    // 閉じた時は聖地一覧を先頭にスクロール
+    if (!isOpening) {
+        const spotsList = document.getElementById('spots-list');
+        if (spotsList) {
+            spotsList.scrollTop = 0;
+        }
+    }
+}
+
+// ジャンルでフィルタリング
+async function filterByGenre(genreId, genreName) {
+    const buttons = document.querySelectorAll('.genre-btn');
+    const badge = document.getElementById('genre-selected-badge');
+    
+    // 同じボタンをクリック → フィルタ解除
+    if (currentGenreFilter === genreId) {
+        currentGenreFilter = null;
+        genreSpotIds = [];
+        buttons.forEach(btn => btn.classList.remove('active'));
+        badge.classList.remove('show');
+        badge.textContent = '';
+        console.log('🏷️ ジャンルフィルタ解除');
+    } else {
+        // 新しいジャンルでフィルタ
+        currentGenreFilter = genreId;
+        buttons.forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.id) === genreId);
+        });
+        
+        // 選択中バッジを表示
+        badge.textContent = genreName;
+        badge.classList.add('show');
+        
+        try {
+            const response = await fetch(`/api/anime-by-genre/${genreId}`);
+            const filteredSpots = await response.json();
+            genreSpotIds = filteredSpots.map(s => s.id);
+            console.log(`🏷️ ジャンルフィルタ: ${genreSpotIds.length}件`);
+        } catch (error) {
+            console.error('ジャンルフィルタエラー:', error);
+            genreSpotIds = [];
+        }
+    }
+    
+    // 他のフィルタをリセット
+    currentFilter = 'all';
+    document.getElementById('anime-filter').value = 'all';
+    
+    // あいうえおタブを「全て」にリセット
+    document.querySelectorAll('.anime-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    const allTab = document.querySelector('.anime-tab[data-tab="all"]');
+    if (allTab) allTab.classList.add('active');
+    currentAnimeTab = 'all';
+    
+    // フィルタを適用
+    applyFilter();
+    renderList();
+    updateCount();
+}
+
 function createFilterOptions() {
-    const animeSet = new Set();
+    // アニメ名と読み仮名のマップを作成
+    const animeMap = new Map();
     spots.forEach(spot => {
-        if (spot.anime_name) animeSet.add(spot.anime_name);
+        if (spot.anime_name && !animeMap.has(spot.anime_name)) {
+            animeMap.set(spot.anime_name, {
+                name: spot.anime_name,
+                yomi: spot.anime_yomi || spot.anime_name
+            });
+        }
     });
 
-    // 全アニメリストを保存（フィルタ用）
-    window.allAnimeList = Array.from(animeSet).sort();
+    // 読み仮名でソート
+    window.allAnimeList = Array.from(animeMap.values()).sort((a, b) => {
+        return a.yomi.localeCompare(b.yomi, 'ja');
+    });
     
     const select = document.getElementById('anime-filter');
     window.allAnimeList.forEach(anime => {
         const option = document.createElement('option');
-        option.value = anime;
-        option.textContent = anime;
+        option.value = anime.name;
+        option.textContent = anime.name;
         select.appendChild(option);
     });
 }
@@ -436,22 +590,25 @@ function filterAnimeDropdown() {
     // ドロップダウンをクリア
     select.innerHTML = '<option value="all">すべてのアニメ</option>';
     
-    // フィルタリング
+    // フィルタリング（読み仮名でも検索可能に）
     let filteredAnimes = window.allAnimeList.filter(anime => {
-        const matchesSearch = searchText === '' || anime.toLowerCase().includes(searchText);
+        const matchesSearch = searchText === '' || 
+            anime.name.toLowerCase().includes(searchText) ||
+            anime.yomi.toLowerCase().includes(searchText);
         const matchesTab = currentTab === 'all' || matchesAnimeTab(anime, currentTab);
         return matchesSearch && matchesTab;
     });
     
     filteredAnimes.forEach(anime => {
         const option = document.createElement('option');
-        option.value = anime;
-        option.textContent = anime;
+        option.value = anime.name;
+        option.textContent = anime.name;
         select.appendChild(option);
     });
     
     // 以前の選択がフィルタ結果に含まれていれば維持、なければ「すべて」
-    if (filteredAnimes.includes(currentSelection)) {
+    const filteredNames = filteredAnimes.map(a => a.name);
+    if (filteredNames.includes(currentSelection)) {
         select.value = currentSelection;
     } else {
         select.value = 'all';
@@ -481,18 +638,20 @@ function filterByTab(tab) {
     applyFilter();
 }
 
-// アニメ名がタブに一致するかチェック
-function matchesAnimeTab(animeName, tab) {
+// アニメ名がタブに一致するかチェック（読み仮名対応）
+function matchesAnimeTab(anime, tab) {
     if (tab === 'all') return true;
     
-    const firstChar = animeName.charAt(0);
+    // animeがオブジェクトの場合はyomiを使用、文字列の場合はそのまま
+    const yomi = typeof anime === 'object' ? (anime.yomi || anime.name || '') : anime;
+    const firstChar = yomi.charAt(0);
     
     // A-Z（英数字）
     if (tab === 'A') {
         return /^[A-Za-z0-9]/.test(firstChar);
     }
     
-    // あいうえお行の判定
+    // あいうえお行の判定（ひらがな/カタカナ両対応）
     const hiraganaRanges = {
         'あ': ['あ', 'い', 'う', 'え', 'お', 'ア', 'イ', 'ウ', 'エ', 'オ'],
         'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご', 'カ', 'キ', 'ク', 'ケ', 'コ', 'ガ', 'ギ', 'グ', 'ゲ', 'ゴ'],
@@ -640,13 +799,58 @@ function showDetailPanel(spot) {
     const headerContent = document.getElementById('detail-header-content');
     const bodyContent = document.getElementById('detail-body-content');
 
+    // 元のデータを保持（翻訳前）
+    const originalAnime = spot.anime_name || '不明';
+    const originalName = spot.name;
+    const originalAddress = spot.address || '';
+    const originalNote = spot.note || '';
+
+    // Street View埋め込み用（メイン）
+    const streetViewEmbed = spot.latitude && spot.longitude 
+        ? `<iframe 
+             src="https://www.google.com/maps/embed/v1/streetview?key=AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo&location=${spot.latitude},${spot.longitude}&heading=0&pitch=0&fov=90"
+             class="streetview-iframe"
+             allowfullscreen
+             loading="lazy"
+             referrerpolicy="no-referrer-when-downgrade">
+           </iframe>`
+        : '';
+    
+    // 航空写真（フォールバック）
+    const satelliteEmbed = spot.latitude && spot.longitude
+        ? `<iframe 
+             src="https://www.google.com/maps/embed/v1/view?key=AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo&center=${spot.latitude},${spot.longitude}&zoom=18&maptype=satellite"
+             class="streetview-iframe"
+             allowfullscreen
+             loading="lazy"
+             referrerpolicy="no-referrer-when-downgrade">
+           </iframe>`
+        : '';
+
     headerContent.innerHTML = `
-        <div class="anime-badge">『${spot.anime_name || '不明'}』</div>
-        <div class="spot-title">${spot.name}</div>
+        <div class="anime-badge" data-original="${originalAnime}">『${originalAnime}』</div>
+        <div class="spot-title" data-original="${originalName}">${originalName}</div>
     `;
 
     bodyContent.innerHTML = `
-        ${spot.address ? `
+        ${spot.latitude && spot.longitude ? `
+            <div class="streetview-container">
+                <div class="view-tabs">
+                    <button class="view-tab active" onclick="switchViewTab('streetview')">📍 Street View</button>
+                    <button class="view-tab" onclick="switchViewTab('satellite')">🛰️ 航空写真</button>
+                </div>
+                <div id="streetview-view" class="view-content active">
+                    ${streetViewEmbed}
+                    <div class="streetview-hint">👆 ドラッグで360°見渡せます</div>
+                </div>
+                <div id="satellite-view" class="view-content">
+                    ${satelliteEmbed}
+                    <div class="streetview-hint">🛰️ 上空からの航空写真</div>
+                </div>
+            </div>
+        ` : ''}
+
+        ${originalAddress ? `
             <div class="info-section">
                 <div class="info-label">
                     <svg class="info-label-icon" viewBox="0 0 24 24">
@@ -655,16 +859,18 @@ function showDetailPanel(spot) {
                     住所
                 </div>
                 <div class="info-content">
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.address)}" 
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(originalAddress)}" 
                        target="_blank" 
+                       class="address-link"
+                       data-original="${originalAddress}"
                        style="color: #1a73e8; text-decoration: none;">
-                        ${spot.address}
+                        ${originalAddress}
                     </a>
                 </div>
             </div>
         ` : ''}
 
-        ${spot.note ? `
+        ${originalNote ? `
             <div class="info-section">
                 <div class="info-label">
                     <svg class="info-label-icon" viewBox="0 0 24 24">
@@ -672,7 +878,7 @@ function showDetailPanel(spot) {
                     </svg>
                     詳細
                 </div>
-                <div class="info-content">${spot.note}</div>
+                <div class="info-content detail-note" data-original="${originalNote.replace(/"/g, '&quot;')}">${originalNote}</div>
             </div>
         ` : ''}
     `;
@@ -681,6 +887,71 @@ function showDetailPanel(spot) {
     
     if (aiPanelOpen) {
         panel.classList.add('ai-active');
+    }
+    
+    // 日本語以外なら自動翻訳
+    if (currentLanguage !== 'ja') {
+        autoTranslateDetailPanel();
+    }
+}
+
+// 詳細パネルの自動翻訳
+async function autoTranslateDetailPanel() {
+    const panel = document.getElementById('detail-panel');
+    if (!panel) return;
+    
+    const elementsToTranslate = [
+        panel.querySelector('.anime-badge'),
+        panel.querySelector('.spot-title'),
+        panel.querySelector('.address-link'),
+        panel.querySelector('.detail-note')
+    ].filter(el => el && el.dataset.original);
+    
+    if (elementsToTranslate.length === 0) return;
+    
+    // 翻訳中表示
+    elementsToTranslate.forEach(el => {
+        el.style.opacity = '0.6';
+    });
+    
+    // 並列で翻訳
+    const translations = await Promise.all(
+        elementsToTranslate.map(async (el) => {
+            try {
+                const original = el.dataset.original;
+                const translated = await translateText(original, currentLanguage);
+                return { el, translated, original };
+            } catch (error) {
+                console.error('翻訳エラー:', error);
+                return { el, translated: el.dataset.original, original: el.dataset.original };
+            }
+        })
+    );
+    
+    // 翻訳結果を適用
+    translations.forEach(({ el, translated, original }) => {
+        if (el.classList.contains('anime-badge')) {
+            el.textContent = `『${translated}』`;
+        } else if (el.classList.contains('address-link')) {
+            el.textContent = translated;
+        } else {
+            el.textContent = translated;
+        }
+        el.style.opacity = '1';
+    });
+}
+
+// Street View / 航空写真 切り替え関数
+function switchViewTab(viewType) {
+    document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
+    
+    if (viewType === 'streetview') {
+        document.querySelector('.view-tab:first-child').classList.add('active');
+        document.getElementById('streetview-view').classList.add('active');
+    } else {
+        document.querySelector('.view-tab:last-child').classList.add('active');
+        document.getElementById('satellite-view').classList.add('active');
     }
 }
 
@@ -695,6 +966,30 @@ function showMultipleDetailPanel(spotsAtLocation) {
     const headerContent = document.getElementById('detail-header-content');
     const bodyContent = document.getElementById('detail-body-content');
 
+    const firstSpot = spotsAtLocation[0];
+    
+    // Street View埋め込み用（メイン）
+    const streetViewEmbed = firstSpot.latitude && firstSpot.longitude 
+        ? `<iframe 
+             src="https://www.google.com/maps/embed/v1/streetview?key=AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo&location=${firstSpot.latitude},${firstSpot.longitude}&heading=0&pitch=0&fov=90"
+             class="streetview-iframe"
+             allowfullscreen
+             loading="lazy"
+             referrerpolicy="no-referrer-when-downgrade">
+           </iframe>`
+        : '';
+    
+    // 航空写真（フォールバック）
+    const satelliteEmbed = firstSpot.latitude && firstSpot.longitude
+        ? `<iframe 
+             src="https://www.google.com/maps/embed/v1/view?key=AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo&center=${firstSpot.latitude},${firstSpot.longitude}&zoom=18&maptype=satellite"
+             class="streetview-iframe"
+             allowfullscreen
+             loading="lazy"
+             referrerpolicy="no-referrer-when-downgrade">
+           </iframe>`
+        : '';
+
     // ヘッダーに複数アニメがあることを表示
     const animeNames = [...new Set(spotsAtLocation.map(s => s.anime_name))];
     headerContent.innerHTML = `
@@ -703,6 +998,24 @@ function showMultipleDetailPanel(spotsAtLocation) {
         </div>
         <div class="spot-title">${spotsAtLocation[0].name || spotsAtLocation[0].address}</div>
     `;
+
+    // Street View / 航空写真 HTML
+    let mapViewHtml = firstSpot.latitude && firstSpot.longitude ? `
+        <div class="streetview-container">
+            <div class="view-tabs">
+                <button class="view-tab active" onclick="switchViewTab('streetview')">📍 Street View</button>
+                <button class="view-tab" onclick="switchViewTab('satellite')">🛰️ 航空写真</button>
+            </div>
+            <div id="streetview-view" class="view-content active">
+                ${streetViewEmbed}
+                <div class="streetview-hint">👆 ドラッグで360°見渡せます</div>
+            </div>
+            <div id="satellite-view" class="view-content">
+                ${satelliteEmbed}
+                <div class="streetview-hint">🛰️ 上空からの航空写真</div>
+            </div>
+        </div>
+    ` : '';
 
     // 各スポットの情報をタブ形式で表示
     let tabsHtml = '<div class="spot-tabs">';
@@ -763,7 +1076,7 @@ function showMultipleDetailPanel(spotsAtLocation) {
     });
     contentsHtml += '</div>';
 
-    bodyContent.innerHTML = tabsHtml + contentsHtml;
+    bodyContent.innerHTML = mapViewHtml + tabsHtml + contentsHtml;
 
     panel.classList.add('show');
     
@@ -1127,8 +1440,32 @@ async function showRecommendations() {
         let html = `
             <div class="ai-message ai">
                 <div class="message-content">${data.recommendation.replace(/\n/g, '<br>')}</div>
-            </div>
         `;
+        
+        // 関連する聖地がある場合、ボタンを追加
+        if (data.related_spots && data.related_spots.length > 0) {
+            const spotIds = data.related_spots.map(s => s.id).join(',');
+            html += `<div style="margin-top: 12px;">
+                <button onclick="showSpotsOnMap('${spotIds}')" 
+                        style="padding: 8px 16px; background: #34a853; color: white; border: none; 
+                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                        🗺️ これらの聖地を地図に表示（${data.related_spots.length}件）
+                </button>
+            </div>`;
+            
+            // 個別ボタン
+            html += '<div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">';
+            data.related_spots.forEach(spot => {
+                html += `<button onclick="jumpToSpotFromChat(${spot.id})" 
+                            style="padding: 6px 12px; background: #1a73e8; color: white; border: none; 
+                            border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            📍 ${spot.name}
+                        </button>`;
+            });
+            html += '</div>';
+        }
+        
+        html += '</div>';
 
         content.innerHTML = html;
         
