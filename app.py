@@ -15,16 +15,16 @@ from PIL import Image
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-# API（環境変数から取得）
+# Groq API（環境変数から取得 - 絶対に直書きしない！）
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 MODEL_NAME = "llama-3.3-70b-versatile"
 
-# Google Maps API 
+# Google Maps API（フロントエンドで使用、公開OK）
 GOOGLE_API_KEY = "AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo"
 
-# Google Custom Search API 
+# Google Custom Search API（環境変数推奨だが、制限付きなので一旦OK）
 GOOGLE_SEARCH_API_KEY = "AIzaSyA0r5o9dSg5dNLS5xoqCbrkcRKC1Go0IYw"
 GOOGLE_SEARCH_ENGINE_ID = "8079ebae211754c29"
 
@@ -41,7 +41,34 @@ def index():
 @app.route('/api/spots', methods=['GET'])
 def get_spots():
     conn = get_db_connection()
-    spots = conn.execute('SELECT * FROM spots').fetchall()
+    # spotsとanimeをJOINしてanime_yomiも取得
+    spots = conn.execute('''
+        SELECT s.*, a.anime_yomi 
+        FROM spots s
+        LEFT JOIN anime a ON s.anime_name = a.anime
+    ''').fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in spots])
+
+@app.route('/api/genres', methods=['GET'])
+def get_genres():
+    """ジャンル一覧を取得"""
+    conn = get_db_connection()
+    genres = conn.execute('SELECT id, name FROM genre ORDER BY id').fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in genres])
+
+@app.route('/api/anime-by-genre/<int:genre_id>', methods=['GET'])
+def get_anime_by_genre(genre_id):
+    """指定ジャンルのアニメと聖地を取得"""
+    conn = get_db_connection()
+    spots = conn.execute('''
+        SELECT DISTINCT s.*, a.anime_yomi FROM spots s
+        JOIN anime a ON s.anime_name = a.anime
+        JOIN anime_genre ag ON a.id = ag.anime_id
+        WHERE ag.genre_id = ?
+        ORDER BY a.anime_yomi
+    ''', [genre_id]).fetchall()
     conn.close()
     return jsonify([dict(row) for row in spots])
 
@@ -268,7 +295,6 @@ JSON:"""
 2. 見つかった聖地を紹介してください
 3. 具体的なおすすめを最大10件挙げてください
 4. 親しみやすく丁寧な口調で
-5. 最後に関連するスポットIDを [IDS: 1,2,3] 形式で記載
 
 回答:"""
         
@@ -281,17 +307,11 @@ JSON:"""
         
         ai_answer = answer_response.choices[0].message.content
         
-        related = []
-        match = re.search(r'\[IDS:\s*(.*?)\]', ai_answer)
-        if match:
-            ids_str = match.group(1).strip()
-            ai_answer = re.sub(r'\[IDS:.*?\]', '', ai_answer).strip()
-            if ids_str != 'none':
-                try:
-                    ids = [int(i.strip()) for i in ids_str.split(',')]
-                    related = [s for s in spots_data if s['id'] in ids][:10]
-                except:
-                    pass
+        # AIの回答から[IDS:]部分を削除（あれば）
+        ai_answer = re.sub(r'\[IDS:.*?\]', '', ai_answer).strip()
+        
+        # 検索でヒットした全ての聖地をrelated_spotsとして返す
+        related = spots_data[:20]  # 最大20件
         
         return jsonify({'answer': ai_answer, 'related_spots': related, 'language': language})
         
@@ -366,7 +386,12 @@ def ai_recommend():
             max_tokens=800,
         )
         
-        return jsonify({'recommendation': response.choices[0].message.content, 'language': language})
+        # おすすめ聖地もrelated_spotsとして返す
+        return jsonify({
+            'recommendation': response.choices[0].message.content, 
+            'related_spots': spots_data[:10],
+            'language': language
+        })
         
     except Exception as e:
         print(f"  ")
