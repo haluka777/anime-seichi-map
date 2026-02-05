@@ -1,7 +1,11 @@
 // ========================================
 // グローバル変数（最初に定義）
 // ========================================
-let currentLanguage = 'ja';  // 翻訳機能用
+
+// URLパラメータから言語を取得
+const urlParams = new URLSearchParams(window.location.search);
+let currentLanguage = urlParams.get('lang') || 'ja';  // 翻訳機能用
+
 let allSpots = [];  
 let map;
 let spots = [];
@@ -25,6 +29,12 @@ let currentLocationMarker = null;
 let markerClustererInstance = null;
 let selectedSpotIds = [];
 let filteredSpots = [];
+
+// ========================================
+// AIチャット会話履歴（継続会話用）
+// ========================================
+let chatHistory = [];  // {role: 'user'|'assistant', content: string}
+let lastSearchContext = null;  // 直前の検索コンテキスト（場所、アニメ名など）
 
 // カテゴリ判定用のキーワードマップ
 const categoryKeywords = {
@@ -89,6 +99,17 @@ function selectLanguage(lang) {
     // UI全体を翻訳
     if (typeof translateUI === 'function') {
         translateUI();
+    }
+    
+    // Google Mapsの言語を変更するためにページをリロード
+    // 現在のURLから既存のlangパラメータを削除して新しいものを追加
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    
+    // 現在と違う言語が選択された場合のみリロード
+    const currentUrlLang = new URL(window.location.href).searchParams.get('lang') || 'ja';
+    if (currentUrlLang !== lang) {
+        window.location.href = url.toString();
     }
 }
 
@@ -171,12 +192,23 @@ async function applyFilter() {
     currentFilter = document.getElementById('anime-filter').value;
     const searchInput = document.getElementById('search-input').value.trim();
     
-    // 検索が空の場合
+    // 検索が空の場合 → 全件表示にリセット
     if (!searchInput) {
         currentSearch = '';
-        updateMarkers();
+        
+        // 強制的に全マーカーを再表示
+        resetAllMarkers();
+        
         renderList();
         updateCount();
+        
+        // 地図を日本全体が見える位置にリセット
+        if (map) {
+            map.setCenter({ lat: 36.5, lng: 138.0 });
+            map.setZoom(5);
+        }
+        
+        console.log('🔄 検索クリア: 全件表示にリセット');
         return;
     }
     
@@ -185,6 +217,40 @@ async function applyFilter() {
     searchTimeout = setTimeout(async () => {
         await performSmartSearch(searchInput);
     }, 500);
+}
+
+// 全マーカーを強制リセット
+function resetAllMarkers() {
+    // クラスタをクリア
+    if (markerClustererInstance) {
+        markerClustererInstance.clearMarkers();
+    }
+    
+    // 全マーカーを一旦非表示
+    markers.forEach(marker => {
+        marker.setMap(null);
+    });
+    
+    // フィルタ条件に合うマーカーだけ表示
+    const visibleMarkers = [];
+    markers.forEach((marker, index) => {
+        const spot = spots[index];
+        if (!spot) return;
+        
+        const matchesAnime = currentFilter === 'all' || spot.anime_name === currentFilter;
+        const matchesCat = matchesCategory(spot, currentCategory);
+        const matchesGenre = currentGenreFilter === null || genreSpotIds.includes(spot.id);
+        
+        // currentSearchは既に''なので、全件マッチ
+        if (matchesAnime && matchesCat && matchesGenre) {
+            visibleMarkers.push(marker);
+        }
+    });
+    
+    // クラスタリングを再構築
+    markerClustererInstance = new markerClusterer.MarkerClusterer({ markers: visibleMarkers, map });
+    
+    console.log('✅ リセット完了: ' + visibleMarkers.length + '件のピンを表示');
 }
 
 async function performSmartSearch(query) {
@@ -251,6 +317,11 @@ async function performSmartSearch(query) {
 }
 
 function updateMarkers() {
+    // まず全マーカーを一旦非表示にする
+    markers.forEach(marker => {
+        marker.setMap(null);
+    });
+    
     // フィルタリングされたマーカーを取得
     const visibleMarkers = [];
     markers.forEach((marker, index) => {
@@ -261,9 +332,10 @@ function updateMarkers() {
             (spot.address && spot.address.toLowerCase().includes(currentSearch)) ||
             (spot.note && spot.note.toLowerCase().includes(currentSearch)) ||
             (spot.anime_name && spot.anime_name.toLowerCase().includes(currentSearch));
+        const matchesCat = matchesCategory(spot, currentCategory);
         const matchesGenre = currentGenreFilter === null || genreSpotIds.includes(spot.id);
         
-        if (matchesAnime && matchesSearch && matchesGenre) {
+        if (matchesAnime && matchesSearch && matchesCat && matchesGenre) {
             visibleMarkers.push(marker);
         }
     });
@@ -549,27 +621,19 @@ async function filterByGenre(genreId, genreName) {
 }
 
 function createFilterOptions() {
-    // アニメ名と読み仮名のマップを作成
-    const animeMap = new Map();
+    const animeSet = new Set();
     spots.forEach(spot => {
-        if (spot.anime_name && !animeMap.has(spot.anime_name)) {
-            animeMap.set(spot.anime_name, {
-                name: spot.anime_name,
-                yomi: spot.anime_yomi || spot.anime_name
-            });
-        }
+        if (spot.anime_name) animeSet.add(spot.anime_name);
     });
 
-    // 読み仮名でソート
-    window.allAnimeList = Array.from(animeMap.values()).sort((a, b) => {
-        return a.yomi.localeCompare(b.yomi, 'ja');
-    });
+    // 全アニメリストを保存（フィルタ用）
+    window.allAnimeList = Array.from(animeSet).sort();
     
     const select = document.getElementById('anime-filter');
     window.allAnimeList.forEach(anime => {
         const option = document.createElement('option');
-        option.value = anime.name;
-        option.textContent = anime.name;
+        option.value = anime;
+        option.textContent = anime;
         select.appendChild(option);
     });
 }
@@ -590,25 +654,22 @@ function filterAnimeDropdown() {
     // ドロップダウンをクリア
     select.innerHTML = '<option value="all">すべてのアニメ</option>';
     
-    // フィルタリング（読み仮名でも検索可能に）
+    // フィルタリング
     let filteredAnimes = window.allAnimeList.filter(anime => {
-        const matchesSearch = searchText === '' || 
-            anime.name.toLowerCase().includes(searchText) ||
-            anime.yomi.toLowerCase().includes(searchText);
+        const matchesSearch = searchText === '' || anime.toLowerCase().includes(searchText);
         const matchesTab = currentTab === 'all' || matchesAnimeTab(anime, currentTab);
         return matchesSearch && matchesTab;
     });
     
     filteredAnimes.forEach(anime => {
         const option = document.createElement('option');
-        option.value = anime.name;
-        option.textContent = anime.name;
+        option.value = anime;
+        option.textContent = anime;
         select.appendChild(option);
     });
     
     // 以前の選択がフィルタ結果に含まれていれば維持、なければ「すべて」
-    const filteredNames = filteredAnimes.map(a => a.name);
-    if (filteredNames.includes(currentSelection)) {
+    if (filteredAnimes.includes(currentSelection)) {
         select.value = currentSelection;
     } else {
         select.value = 'all';
@@ -638,20 +699,18 @@ function filterByTab(tab) {
     applyFilter();
 }
 
-// アニメ名がタブに一致するかチェック（読み仮名対応）
-function matchesAnimeTab(anime, tab) {
+// アニメ名がタブに一致するかチェック
+function matchesAnimeTab(animeName, tab) {
     if (tab === 'all') return true;
     
-    // animeがオブジェクトの場合はyomiを使用、文字列の場合はそのまま
-    const yomi = typeof anime === 'object' ? (anime.yomi || anime.name || '') : anime;
-    const firstChar = yomi.charAt(0);
+    const firstChar = animeName.charAt(0);
     
     // A-Z（英数字）
     if (tab === 'A') {
         return /^[A-Za-z0-9]/.test(firstChar);
     }
     
-    // あいうえお行の判定（ひらがな/カタカナ両対応）
+    // あいうえお行の判定
     const hiraganaRanges = {
         'あ': ['あ', 'い', 'う', 'え', 'お', 'ア', 'イ', 'ウ', 'エ', 'オ'],
         'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご', 'カ', 'キ', 'ク', 'ケ', 'コ', 'ガ', 'ギ', 'グ', 'ゲ', 'ゴ'],
@@ -799,12 +858,6 @@ function showDetailPanel(spot) {
     const headerContent = document.getElementById('detail-header-content');
     const bodyContent = document.getElementById('detail-body-content');
 
-    // 元のデータを保持（翻訳前）
-    const originalAnime = spot.anime_name || '不明';
-    const originalName = spot.name;
-    const originalAddress = spot.address || '';
-    const originalNote = spot.note || '';
-
     // Street View埋め込み用（メイン）
     const streetViewEmbed = spot.latitude && spot.longitude 
         ? `<iframe 
@@ -828,8 +881,15 @@ function showDetailPanel(spot) {
         : '';
 
     headerContent.innerHTML = `
-        <div class="anime-badge" data-original="${originalAnime}">『${originalAnime}』</div>
-        <div class="spot-title" data-original="${originalName}">${originalName}</div>
+        <div class="anime-badge">
+            ${spot.anime_url ? 
+                `<a href="${spot.anime_url}" target="_blank" style="color: #1a73e8; text-decoration: none;">
+                    『${spot.anime_name || '不明'}』<span style="font-size: 12px;"> 🔗</span>
+                </a>` : 
+                `『${spot.anime_name || '不明'}』`
+            }
+        </div>
+        <div class="spot-title">${spot.name}</div>
     `;
 
     bodyContent.innerHTML = `
@@ -850,7 +910,7 @@ function showDetailPanel(spot) {
             </div>
         ` : ''}
 
-        ${originalAddress ? `
+        ${spot.address ? `
             <div class="info-section">
                 <div class="info-label">
                     <svg class="info-label-icon" viewBox="0 0 24 24">
@@ -859,18 +919,16 @@ function showDetailPanel(spot) {
                     住所
                 </div>
                 <div class="info-content">
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(originalAddress)}" 
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.address)}" 
                        target="_blank" 
-                       class="address-link"
-                       data-original="${originalAddress}"
                        style="color: #1a73e8; text-decoration: none;">
-                        ${originalAddress}
+                        ${spot.address}
                     </a>
                 </div>
             </div>
         ` : ''}
 
-        ${originalNote ? `
+        ${spot.note ? `
             <div class="info-section">
                 <div class="info-label">
                     <svg class="info-label-icon" viewBox="0 0 24 24">
@@ -878,7 +936,7 @@ function showDetailPanel(spot) {
                     </svg>
                     詳細
                 </div>
-                <div class="info-content detail-note" data-original="${originalNote.replace(/"/g, '&quot;')}">${originalNote}</div>
+                <div class="info-content">${spot.note}</div>
             </div>
         ` : ''}
     `;
@@ -888,57 +946,6 @@ function showDetailPanel(spot) {
     if (aiPanelOpen) {
         panel.classList.add('ai-active');
     }
-    
-    // 日本語以外なら自動翻訳
-    if (currentLanguage !== 'ja') {
-        autoTranslateDetailPanel();
-    }
-}
-
-// 詳細パネルの自動翻訳
-async function autoTranslateDetailPanel() {
-    const panel = document.getElementById('detail-panel');
-    if (!panel) return;
-    
-    const elementsToTranslate = [
-        panel.querySelector('.anime-badge'),
-        panel.querySelector('.spot-title'),
-        panel.querySelector('.address-link'),
-        panel.querySelector('.detail-note')
-    ].filter(el => el && el.dataset.original);
-    
-    if (elementsToTranslate.length === 0) return;
-    
-    // 翻訳中表示
-    elementsToTranslate.forEach(el => {
-        el.style.opacity = '0.6';
-    });
-    
-    // 並列で翻訳
-    const translations = await Promise.all(
-        elementsToTranslate.map(async (el) => {
-            try {
-                const original = el.dataset.original;
-                const translated = await translateText(original, currentLanguage);
-                return { el, translated, original };
-            } catch (error) {
-                console.error('翻訳エラー:', error);
-                return { el, translated: el.dataset.original, original: el.dataset.original };
-            }
-        })
-    );
-    
-    // 翻訳結果を適用
-    translations.forEach(({ el, translated, original }) => {
-        if (el.classList.contains('anime-badge')) {
-            el.textContent = `『${translated}』`;
-        } else if (el.classList.contains('address-link')) {
-            el.textContent = translated;
-        } else {
-            el.textContent = translated;
-        }
-        el.style.opacity = '1';
-    });
 }
 
 // Street View / 航空写真 切り替え関数
@@ -1039,7 +1046,15 @@ function showMultipleDetailPanel(spotsAtLocation) {
                         </svg>
                         アニメ
                     </div>
-                    <div class="info-content">『${spot.anime_name || '不明'}』</div>
+                    <div class="info-content">
+                        ${spot.anime_url ? 
+                            `<a href="${spot.anime_url}" target="_blank" style="color: #1a73e8; text-decoration: none; font-weight: 500;">
+                                『${spot.anime_name || '不明'}』
+                                <span style="font-size: 11px; color: #5f6368; margin-left: 4px;">🔗 公式サイト</span>
+                            </a>` : 
+                            `『${spot.anime_name || '不明'}』`
+                        }
+                    </div>
                 </div>
                 
                 ${spot.address ? `
@@ -1165,6 +1180,9 @@ async function sendAIQuestion() {
     userMessage.innerHTML = `<div class="message-content">${question}</div>`;
     chatArea.appendChild(userMessage);
     
+    // 会話履歴にユーザーの質問を追加
+    chatHistory.push({ role: 'user', content: question });
+    
     input.value = '';
     input.disabled = true;
     sendBtn.disabled = true;
@@ -1178,16 +1196,37 @@ async function sendAIQuestion() {
     try {
         const lang = (typeof currentLanguage !== 'undefined') ? currentLanguage : 'ja';
         
+        // 直近5件の会話履歴を送信
+        const recentHistory = chatHistory.slice(-10);
+        
         const response = await fetch('/api/ai-search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 question: question,
-                language: lang
+                language: lang,
+                history: recentHistory,
+                lastContext: lastSearchContext
             })
         });
         
         const data = await response.json();
+        
+        console.log('API応答:', data);
+        console.log('related_spots:', data.related_spots);
+        
+        // 検索コンテキストを保存
+        if (data.context) {
+            lastSearchContext = data.context;
+        }
+        
+        // 会話履歴にAIの回答を追加
+        chatHistory.push({ role: 'assistant', content: data.answer });
+        
+        // 履歴が多くなりすぎたら古いものを削除
+        if (chatHistory.length > 20) {
+            chatHistory = chatHistory.slice(-20);
+        }
         
         loadingDiv.remove();
         
@@ -1198,39 +1237,127 @@ async function sendAIQuestion() {
         const aiMessage = document.createElement('div');
         aiMessage.className = 'ai-message ai';
 
+        // ========================================
+        // シンプル版：全部表示
+        // ========================================
+        
+        // アニメ名とURLのマッピングを作成
+        const animeUrlMap = {};
+        if (data.related_spots) {
+            data.related_spots.forEach(spot => {
+                if (spot.anime_name && spot.anime_url) {
+                    animeUrlMap[spot.anime_name] = spot.anime_url;
+                }
+            });
+        }
+        
+        // AI回答を整形（アニメ名を色付き、段落分け）
+        let formattedAnswer = data.answer || '回答を取得できませんでした';
+        
+        // **『アニメ名』 (English Title)** パターンを変換（リンク付き）
+        formattedAnswer = formattedAnswer.replace(/\*\*『(.+?)』\s*(\([^)]+\))?\*\*/g, (match, animeName, englishTitle) => {
+            const url = animeUrlMap[animeName];
+            const displayTitle = englishTitle ? `『${animeName}』 ${englishTitle}` : `『${animeName}』`;
+            if (url) {
+                return `<div style="margin-top: 16px; margin-bottom: 4px;"><a href="${url}" target="_blank" style="color: #1a73e8; font-weight: bold; font-size: 15px; text-decoration: none;">🎬 ${displayTitle} <span style="font-size: 12px;">🔗</span></a></div>`;
+            } else {
+                return `<div style="margin-top: 16px; margin-bottom: 4px;"><span style="color: #1a73e8; font-weight: bold; font-size: 15px;">🎬 ${displayTitle}</span></div>`;
+            }
+        });
+        
+        // **アニメ名** を色付きに変換（別パターン - 残った**を処理）
+        formattedAnswer = formattedAnswer.replace(/\*\*(.+?)\*\*/g, 
+            '<span style="color: #1a73e8; font-weight: bold;">$1</span>');
+        
+        // 📍 聖地名 を強調（シンプルにspanだけ）
+        formattedAnswer = formattedAnswer.replace(/📍\s*/g, 
+            '<br><span style="color: #333; font-weight: 500;">📍 </span>');
+        
+        // 【登場シーン】【見どころ】を色付け（シンプルにspanだけ）
+        formattedAnswer = formattedAnswer.replace(/【登場シーン】/g, 
+            '<br><span style="color: #e91e63; font-weight: 500;">【登場シーン】</span>');
+        formattedAnswer = formattedAnswer.replace(/【見どころ】/g, 
+            '<br><span style="color: #4caf50; font-weight: 500;">【見どころ】</span>');
+        
+        // 改行を整形
+        formattedAnswer = formattedAnswer.replace(/\n\n/g, '<br><br>');
+        formattedAnswer = formattedAnswer.replace(/\n/g, '<br>');
+        
+        // メッセージID
+        const messageId = 'msg-' + Date.now();
+        
+        // AI回答を全部表示（続きを見るなし）
         let content = `
-            <div class="message-label">AI</div>
-            <div class="message-content">${data.answer.replace(/\n/g, '<br>')}</div>
+            <div class="message-label">🤖 AI</div>
+            <div class="message-content" style="font-size: 14px; line-height: 1.6;">
+                ${formattedAnswer}
+            </div>
         `;
 
-        // 関連する聖地がある場合、ボタンを追加
-        if (data.related_spots && data.related_spots.length > 0) {
+        // 関連する聖地がある場合、カード形式で表示
+        const spots = data.related_spots || [];
+        console.log('spots数:', spots.length);
+        
+        if (spots.length > 0) {
+            // 件数サマリー
+            content += `
+                <div style="margin-top: 12px; padding: 8px 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; font-size: 13px;">
+                    📍 ${spots.length}件の聖地が見つかりました
+                </div>
+            `;
+            
             // 一括表示ボタン
-            const spotIds = data.related_spots.map(s => s.id).join(',');
-            content += `<div style="margin-top: 12px;">
+            const spotIds = spots.map(s => s.id).join(',');
+            content += `
                 <button onclick="showSpotsOnMap('${spotIds}')" 
-                        style="padding: 8px 16px; background: #34a853; color: white; border: none; 
-                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                        🗺️ これらの聖地を地図に表示（${data.related_spots.length}件）
+                    style="margin-top: 8px; width: 100%; padding: 10px; background: #34a853; color: white; border: none; 
+                    border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                    🗺️ すべて地図に表示
                 </button>
-            </div>`;
+            `;
             
-            // 個別ボタン
-            content += '<div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">';
+            // 聖地カード（5件すべて表示）
+            content += `<div style="margin-top: 10px;">`;
             
-            data.related_spots.forEach(spot => {
-                content += `<button onclick="jumpToSpotFromChat(${spot.id})" 
-                            style="padding: 6px 12px; background: #1a73e8; color: white; border: none; 
-                            border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            📍 ${spot.name}
-                        </button>`;
-            });
+            for (let i = 0; i < spots.length; i++) {
+                const spot = spots[i];
+                content += `
+                    <div style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; 
+                            background: #f8f9fa; border-radius: 10px; 
+                            border-left: 3px solid #1a73e8;">
+                        <div style="width: 24px; height: 24px; background: #1a73e8; color: white; 
+                                    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                                    font-size: 12px; font-weight: bold; margin-right: 10px; flex-shrink: 0;">
+                            ${i + 1}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 13px; font-weight: 500;">
+                                ${spot.anime_url ? 
+                                    `<a href="${spot.anime_url}" target="_blank" 
+                                        onclick="event.stopPropagation();" 
+                                        style="color: #1a73e8; text-decoration: none;">
+                                        ${spot.anime_name || 'アニメ名なし'} 🔗
+                                    </a>` : 
+                                    `<span style="color: #1a73e8;">${spot.anime_name || 'アニメ名なし'}</span>`
+                                }
+                            </div>
+                            <div style="font-size: 12px; color: #333; cursor: pointer;" 
+                                 onclick="jumpToSpotFromChat(${spot.id})">
+                                📍 ${spot.name || '聖地名なし'} <span style="color: #999;">›</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
             
             content += '</div>';
         }
+        
+        console.log('最終content長さ:', content.length);
 
         aiMessage.innerHTML = content;
         chatArea.appendChild(aiMessage);
+        
         
     } catch (error) {
         loadingDiv.remove();
@@ -1244,6 +1371,70 @@ async function sendAIQuestion() {
         sendBtn.disabled = false;
         chatArea.scrollTop = chatArea.scrollHeight;
         input.focus();
+    }
+}
+
+// ========================================
+// チャットUI用ヘルパー関数
+// ========================================
+
+// 聖地カードを生成
+function createSpotCard(spot, number) {
+    return `
+        <div onclick="jumpToSpotFromChat(${spot.id})" 
+             style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; 
+                    background: #f8f9fa; border-radius: 10px; cursor: pointer; 
+                    transition: all 0.2s; border-left: 3px solid #1a73e8;"
+             onmouseover="this.style.background='#e8f0fe'; this.style.transform='translateX(3px)';"
+             onmouseout="this.style.background='#f8f9fa'; this.style.transform='translateX(0)';">
+            <div style="width: 24px; height: 24px; background: #1a73e8; color: white; 
+                        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                        font-size: 12px; font-weight: bold; margin-right: 10px; flex-shrink: 0;">
+                ${number}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 500; color: #1a73e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${spot.anime_name}
+                </div>
+                <div style="font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    📍 ${spot.name}
+                </div>
+            </div>
+            <div style="color: #999; font-size: 16px; margin-left: 8px;">›</div>
+        </div>
+    `;
+}
+
+// 全文表示の切り替え
+function toggleFullMessage(messageId) {
+    const shortEl = document.getElementById(messageId + '-short');
+    const fullEl = document.getElementById(messageId + '-full');
+    const btnEl = document.getElementById(messageId + '-btn');
+    
+    if (fullEl.style.display === 'none') {
+        shortEl.style.display = 'none';
+        fullEl.style.display = 'inline';
+        btnEl.innerHTML = '▲ 閉じる';
+    } else {
+        shortEl.style.display = 'inline';
+        fullEl.style.display = 'none';
+        btnEl.innerHTML = '▼ 続きを見る';
+    }
+}
+
+// もっと見るの切り替え
+function toggleMoreSpots(messageId) {
+    const moreEl = document.getElementById(messageId + '-more-spots');
+    const btnEl = document.getElementById(messageId + '-more-btn');
+    
+    if (moreEl.style.display === 'none') {
+        moreEl.style.display = 'block';
+        btnEl.innerHTML = '－ 閉じる';
+        btnEl.style.background = '#e0e0e0';
+    } else {
+        moreEl.style.display = 'none';
+        btnEl.innerHTML = btnEl.getAttribute('data-original') || '＋ もっと見る';
+        btnEl.style.background = '#f0f0f0';
     }
 }
 
@@ -1397,7 +1588,7 @@ function jumpToSpot(spotId) {
 }
 
 // ========================================
-// AIおすすめ（多言語対応）
+// AIおすすめ（ジャンルランキング形式）
 // ========================================
 async function showRecommendations() {
     if (viewHistory.length === 0) {
@@ -1437,35 +1628,93 @@ async function showRecommendations() {
         
         if (data.error) throw new Error(data.error);
         
+        // ジャンルランキング形式で表示
         let html = `
-            <div class="ai-message ai">
-                <div class="message-content">${data.recommendation.replace(/\n/g, '<br>')}</div>
+            <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+                <div style="font-size: 14px; opacity: 0.9;">📊 あなたの好みのジャンル分析</div>
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">閲覧した作品: ${data.total_viewed}件</div>
+            </div>
         `;
         
-        // 関連する聖地がある場合、ボタンを追加
-        if (data.related_spots && data.related_spots.length > 0) {
-            const spotIds = data.related_spots.map(s => s.id).join(',');
-            html += `<div style="margin-top: 12px;">
-                <button onclick="showSpotsOnMap('${spotIds}')" 
-                        style="padding: 8px 16px; background: #34a853; color: white; border: none; 
-                        border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                        🗺️ これらの聖地を地図に表示（${data.related_spots.length}件）
-                </button>
-            </div>`;
-            
-            // 個別ボタン
-            html += '<div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">';
-            data.related_spots.forEach(spot => {
-                html += `<button onclick="jumpToSpotFromChat(${spot.id})" 
-                            style="padding: 6px 12px; background: #1a73e8; color: white; border: none; 
-                            border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            📍 ${spot.name}
-                        </button>`;
+        // ジャンルランキング表示
+        if (data.genre_ranking && data.genre_ranking.length > 0) {
+            html += '<div style="margin-bottom: 20px;">';
+            data.genre_ranking.forEach((item, index) => {
+                const [genre, count] = item;
+                const barWidth = (count / data.genre_ranking[0][1]) * 100;
+                const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#a55eea'];
+                html += `
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px;">
+                            <span>${index + 1}位 ${genre}</span>
+                            <span>${count}回</span>
+                        </div>
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden;">
+                            <div style="background: ${colors[index % 5]}; height: 100%; width: ${barWidth}%; border-radius: 10px; transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+                `;
             });
             html += '</div>';
         }
         
-        html += '</div>';
+        // おすすめアニメ表示（ジャンル別）
+        if (data.recommendations && data.recommendations.length > 0) {
+            data.recommendations.forEach(rec => {
+                // 星の色を決定（1位=金、2位=銀、3位=銅）
+                const starColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+                const starColor = starColors[rec.rank - 1] || '#ffd700';
+                const stars = '★'.repeat(rec.stars) + '☆'.repeat(5 - rec.stars);
+                
+                // 1位のジャンルは強調カラー
+                const isTopGenre = rec.rank === 1;
+                const headerBg = isTopGenre 
+                    ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)' 
+                    : rec.rank === 2 
+                        ? 'linear-gradient(135deg, #feca57 0%, #f39c12 100%)'
+                        : 'linear-gradient(135deg, #48dbfb 0%, #0abde3 100%)';
+                
+                html += `
+                    <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="background: ${headerBg}; padding: 12px 15px; color: white;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: bold; font-size: 15px;">${rec.rank}位 ${rec.genre}</span>
+                                <span style="font-size: 16px; color: ${starColor}; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${stars}</span>
+                            </div>
+                            <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">閲覧回数: ${rec.count}回</div>
+                        </div>
+                        <div style="background: white; padding: 12px;">
+                `;
+                
+                // アニメリスト
+                if (rec.animes && rec.animes.length > 0) {
+                    rec.animes.forEach(item => {
+                        const animeName = item.anime_name;
+                        const spot = item.spot;
+                        
+                        // 1位ジャンルのアニメ名は強調色
+                        const animeNameStyle = isTopGenre 
+                            ? 'color: #ee5a24; font-weight: bold;' 
+                            : 'color: #333;';
+                        
+                        html += `
+                            <div style="padding: 10px; margin-bottom: 8px; background: #f8f9fa; border-radius: 8px; cursor: pointer; transition: background 0.2s;"
+                                 onclick="jumpToSpotFromChat(${spot.id})"
+                                 onmouseover="this.style.background='#e9ecef'"
+                                 onmouseout="this.style.background='#f8f9fa'">
+                                <div style="font-size: 14px; ${animeNameStyle}">『${animeName}』</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">📍 ${spot.name}</div>
+                                <div style="font-size: 11px; color: #999; margin-top: 2px;">${spot.address}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div style="color: #999; font-size: 13px;">おすすめ作品がありません</div>';
+                }
+                
+                html += '</div></div>';
+            });
+        }
 
         content.innerHTML = html;
         
@@ -1500,6 +1749,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // URLパラメータから言語を取得して初期化
+    const urlParams = new URLSearchParams(window.location.search);
+    const lang = urlParams.get('lang') || 'ja';
+    currentLanguage = lang;
+    
+    // 言語ボタンの表示を更新
+    const data = languageData[lang];
+    if (data) {
+        const flagEl = document.getElementById('current-lang-flag');
+        if (flagEl) flagEl.textContent = data.flag;
+        
+        // モーダル内のアクティブ状態を更新
+        document.querySelectorAll('.lang-modal-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+    }
+    
+    // UI全体を翻訳
+    if (typeof translateUI === 'function') {
+        translateUI();
+    }
+    
+    console.log('🌐 言語設定:', lang);
 });
 
 // ページ読み込み時に自動で現在地を取得

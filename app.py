@@ -15,18 +15,18 @@ from PIL import Image
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-# Groq API（環境変数から取得 - 絶対に直書きしない！）
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
-client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+# API（環境変数から取得）
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
 MODEL_NAME = "llama-3.3-70b-versatile"
 
-# Google Maps API（フロントエンドで使用、公開OK）
-GOOGLE_API_KEY = "AIzaSyAS7HYsHYhWa8uIk0bdBS73PKypRpHzaFo"
+# Google Maps API（環境変数から取得）
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-# Google Custom Search API（環境変数推奨だが、制限付きなので一旦OK）
-GOOGLE_SEARCH_API_KEY = "AIzaSyA0r5o9dSg5dNLS5xoqCbrkcRKC1Go0IYw"
-GOOGLE_SEARCH_ENGINE_ID = "8079ebae211754c29"
+# Google Custom Search API（環境変数から取得）
+GOOGLE_SEARCH_API_KEY = os.environ.get("GOOGLE_SEARCH_API_KEY")
+GOOGLE_SEARCH_ENGINE_ID = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "8079ebae211754c29")
 
 
 def get_db_connection():
@@ -41,34 +41,12 @@ def index():
 @app.route('/api/spots', methods=['GET'])
 def get_spots():
     conn = get_db_connection()
-    # spotsとanimeをJOINしてanime_yomiも取得
+    # anime_urlを含めてJOIN
     spots = conn.execute('''
-        SELECT s.*, a.anime_yomi 
-        FROM spots s
+        SELECT s.*, a.anime_url 
+        FROM spots s 
         LEFT JOIN anime a ON s.anime_name = a.anime
     ''').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in spots])
-
-@app.route('/api/genres', methods=['GET'])
-def get_genres():
-    """ジャンル一覧を取得"""
-    conn = get_db_connection()
-    genres = conn.execute('SELECT id, name FROM genre ORDER BY id').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in genres])
-
-@app.route('/api/anime-by-genre/<int:genre_id>', methods=['GET'])
-def get_anime_by_genre(genre_id):
-    """指定ジャンルのアニメと聖地を取得"""
-    conn = get_db_connection()
-    spots = conn.execute('''
-        SELECT DISTINCT s.*, a.anime_yomi FROM spots s
-        JOIN anime a ON s.anime_name = a.anime
-        JOIN anime_genre ag ON a.id = ag.anime_id
-        WHERE ag.genre_id = ?
-        ORDER BY a.anime_yomi
-    ''', [genre_id]).fetchall()
     conn.close()
     return jsonify([dict(row) for row in spots])
 
@@ -180,148 +158,447 @@ Your Name →
         print(f"  ")
         return jsonify({'translated_query': query, 'original_query': query, 'needs_translation': False})
 
+@app.route('/api/genres')
+def get_genres():
+    """ジャンル一覧を取得"""
+    try:
+        conn = get_db_connection()
+        genres = conn.execute('SELECT * FROM genre ORDER BY id').fetchall()
+        conn.close()
+        return jsonify([{'id': g['id'], 'name': g['name']} for g in genres])
+    except Exception as e:
+        print(f"ジャンル取得エラー: {str(e)}")
+        return jsonify([])
+
 @app.route('/api/ai-search', methods=['POST'])
 def ai_search():
-    """AI"""
+    """AI聖地検索（会話継続対応）"""
     try:
         data = request.json
         user_question = data.get('question', '')
         language = data.get('language', 'ja')
+        history = data.get('history', [])
+        last_context = data.get('lastContext', None)
         
         if not user_question:
-            return jsonify({'error': ''}), 400
+            return jsonify({'error': '質問を入力してください'}), 400
         
-        print(f"\n : {user_question}")
+        print(f"\n=== AI検索 ===")
+        print(f"質問: {user_question}")
+        print(f"前回コンテキスト: {last_context}")
         
-        intent_prompt = f"""JSON:
-{{"animes": [""], "locations": [""], "keywords": [""]}}
-
-:
-"" → {{"animes": [], "locations": ["", ""], "keywords": [""]}}
-"Your Name locations" → {{"animes": [""], "locations": [], "keywords": []}}
-
-: {user_question}
-JSON:"""
-
-        intent_response = client.chat.completions.create(
-            messages=[{"role": "user", "content": intent_prompt}],
-            model=MODEL_NAME,
-            temperature=0.3,
-            max_tokens=200,
-        )
+        # ========================================
+        # 1. 継続会話・フィルタの判定（多言語対応）
+        # ========================================
+        continuation_words = [
+            # 日本語
+            'もっと', '他に', '続き', 'もう少し', '別の', 'さらに', '次は', '他は',
+            # 英語
+            'more', 'other', 'another', 'next', 'continue', 'else',
+            # 韓国語
+            '더', '다른', '계속', '다음',
+            # 中国語
+            '更多', '其他', '继续', '下一个',
+            # タイ語
+            'เพิ่มเติม', 'อื่น',
+            # ベトナム語
+            'thêm', 'khác',
+            # インドネシア語
+            'lagi', 'lainnya',
+        ]
         
-        intent_text = intent_response.choices[0].message.content.strip()
+        filter_words = [
+            # 日本語
+            'だけ', 'のみ', '絞', '限定',
+            # 英語
+            'only', 'filter', 'just',
+            # 韓国語
+            '만', '필터',
+            # 中国語
+            '只', '仅', '筛选',
+            # タイ語
+            'เท่านั้น',
+            # ベトナム語
+            'chỉ',
+            # インドネシア語
+            'saja', 'hanya',
+        ]
         
-        try:
-            intent = json.loads(intent_text)
-            animes = intent.get('animes', [])
-            locations = intent.get('locations', [])
-            keywords = intent.get('keywords', [])
-        except:
-            animes = []
+        place_filters = ['神社', '寺', '駅', '学校', '公園', '海', '橋', '店', 'カフェ']
+        
+        question_lower = user_question.lower()
+        is_continuation = any(word in user_question or word.lower() in question_lower for word in continuation_words)
+        is_filter = any(word in user_question or word.lower() in question_lower for word in filter_words)
+        filter_keyword = None
+        
+        # フィルタキーワードを抽出（日本語のみ、後で多言語対応）
+        for pf in place_filters:
+            if pf in user_question:
+                filter_keyword = pf
+                break
+        
+        print(f"継続: {is_continuation}, フィルタ: {is_filter}, フィルタKW: {filter_keyword}")
+        
+        # ========================================
+        # 2. 検索条件を決定
+        # ========================================
+        if (is_continuation or is_filter) and last_context:
+            # 継続またはフィルタの場合：前回のコンテキストを使用
+            print("→ 継続/フィルタモード")
+            locations = last_context.get('locations', [])
+            animes = last_context.get('animes', [])
+            
+            if is_filter:
+                # フィルタの場合：表示済みをリセット
+                shown_ids = []
+            else:
+                # 継続の場合：表示済みを引き継ぐ
+                shown_ids = last_context.get('shown_ids', [])
+        else:
+            # 新規検索の場合：質問から抽出
+            print("→ 新規検索モード")
             locations = []
-            keywords = user_question.split()[:3]
+            animes = []
+            shown_ids = []
+            filter_keyword = None  # 新規検索ではフィルタなし
+            
+            # ========================================
+            # 多言語対応：都道府県マップ（8言語）
+            # ========================================
+            prefecture_map = {
+                # 日本語
+                '北海道': '北海道', '青森': '青森県', '岩手': '岩手県', '宮城': '宮城県', 
+                '秋田': '秋田県', '山形': '山形県', '福島': '福島県', '茨城': '茨城県', 
+                '栃木': '栃木県', '群馬': '群馬県', '埼玉': '埼玉県', '千葉': '千葉県', 
+                '神奈川': '神奈川県', '新潟': '新潟県', '富山': '富山県', '石川': '石川県', 
+                '福井': '福井県', '山梨': '山梨県', '長野': '長野県', '岐阜': '岐阜県', 
+                '静岡': '静岡県', '愛知': '愛知県', '三重': '三重県', '滋賀': '滋賀県', 
+                '奈良': '奈良県', '和歌山': '和歌山県', '鳥取': '鳥取県', '島根': '島根県', 
+                '岡山': '岡山県', '広島': '広島県', '山口': '山口県', '徳島': '徳島県', 
+                '香川': '香川県', '愛媛': '愛媛県', '高知': '高知県', '佐賀': '佐賀県', 
+                '長崎': '長崎県', '熊本': '熊本県', '大分': '大分県', '宮崎': '宮崎県', 
+                '鹿児島': '鹿児島県', '沖縄': '沖縄県',
+                '東京': '東京都', '京都': '京都府', '大阪': '大阪府', '兵庫': '兵庫県', '福岡': '福岡県',
+                
+                # 英語 (English)
+                'hokkaido': '北海道', 'aomori': '青森県', 'iwate': '岩手県', 'miyagi': '宮城県',
+                'akita': '秋田県', 'yamagata': '山形県', 'fukushima': '福島県', 'ibaraki': '茨城県',
+                'tochigi': '栃木県', 'gunma': '群馬県', 'saitama': '埼玉県', 'chiba': '千葉県',
+                'kanagawa': '神奈川県', 'niigata': '新潟県', 'toyama': '富山県', 'ishikawa': '石川県',
+                'fukui': '福井県', 'yamanashi': '山梨県', 'nagano': '長野県', 'gifu': '岐阜県',
+                'shizuoka': '静岡県', 'aichi': '愛知県', 'mie': '三重県', 'shiga': '滋賀県',
+                'nara': '奈良県', 'wakayama': '和歌山県', 'tottori': '鳥取県', 'shimane': '島根県',
+                'okayama': '岡山県', 'hiroshima': '広島県', 'yamaguchi': '山口県', 'tokushima': '徳島県',
+                'kagawa': '香川県', 'ehime': '愛媛県', 'kochi': '高知県', 'saga': '佐賀県',
+                'nagasaki': '長崎県', 'kumamoto': '熊本県', 'oita': '大分県', 'miyazaki': '宮崎県',
+                'kagoshima': '鹿児島県', 'okinawa': '沖縄県',
+                'tokyo': '東京都', 'kyoto': '京都府', 'osaka': '大阪府', 'hyogo': '兵庫県', 'fukuoka': '福岡県',
+                
+                # 韓国語 (한국어)
+                '홋카이도': '北海道', '아오모리': '青森県', '이와테': '岩手県', '미야기': '宮城県',
+                '아키타': '秋田県', '야마가타': '山形県', '후쿠시마': '福島県', '이바라키': '茨城県',
+                '도치기': '栃木県', '군마': '群馬県', '사이타마': '埼玉県', '지바': '千葉県',
+                '가나가와': '神奈川県', '니가타': '新潟県', '도야마': '富山県', '이시카와': '石川県',
+                '후쿠이': '福井県', '야마나시': '山梨県', '나가노': '長野県', '기후': '岐阜県',
+                '시즈오카': '静岡県', '아이치': '愛知県', '미에': '三重県', '시가': '滋賀県',
+                '나라': '奈良県', '와카야마': '和歌山県', '돗토리': '鳥取県', '시마네': '島根県',
+                '오카야마': '岡山県', '히로시마': '広島県', '야마구치': '山口県', '도쿠시마': '徳島県',
+                '가가와': '香川県', '에히메': '愛媛県', '고치': '高知県', '사가': '佐賀県',
+                '나가사키': '長崎県', '구마모토': '熊本県', '오이타': '大分県', '미야자키': '宮崎県',
+                '가고시마': '鹿児島県', '오키나와': '沖縄県',
+                '도쿄': '東京都', '교토': '京都府', '오사카': '大阪府', '효고': '兵庫県', '후쿠오카': '福岡県',
+                
+                # タイ語 (ภาษาไทย)
+                'ฮอกไกโด': '北海道', 'โตเกียว': '東京都', 'เกียวโต': '京都府', 'โอซาก้า': '大阪府',
+                'ฮิโรชิม่า': '広島県', 'โอกินาว่า': '沖縄県', 'นารา': '奈良県', 'โคเบะ': '兵庫県',
+                
+                # ベトナム語 (Tiếng Việt)  
+                'bắc hải đạo': '北海道', 'đông kinh': '東京都', 'kinh đô': '京都府', 'đại phản': '大阪府',
+                
+                # インドネシア語 (Bahasa Indonesia) - 英語と同じローマ字
+                
+                # 中国語簡体字 (简体中文)
+                '北海道': '北海道', '东京': '東京都', '京都': '京都府', '大阪': '大阪府',
+                '广岛': '広島県', '冲绳': '沖縄県', '奈良': '奈良県',
+                
+                # 中国語繁体字 (繁體中文)
+                '東京': '東京都', '廣島': '広島県', '沖繩': '沖縄県',
+            }
+            
+            # 小文字でも検索できるように
+            question_lower = user_question.lower()
+            
+            for short_name, full_name in prefecture_map.items():
+                # 日本語はそのまま、英語等は小文字で比較
+                if short_name in user_question or short_name.lower() in question_lower:
+                    locations.append(full_name)
+                    break  # 最初に見つかったものだけ
+            
+            # アニメ名を抽出（DBから検索）
+            conn = get_db_connection()
+            anime_names = conn.execute('SELECT DISTINCT anime_name FROM spots').fetchall()
+            for row in anime_names:
+                anime_name = row['anime_name']
+                if anime_name and anime_name in user_question:
+                    animes.append(anime_name)
+            conn.close()
         
-        print(f" : {animes},  : {locations}")
+        # ========================================
+        # 多言語フィルタキーワード対応
+        # ========================================
+        multilang_filters = {
+            # 神社・寺
+            '神社': '神社', 'shrine': '神社', '신사': '神社', 'ศาลเจ้า': '神社', 
+            'kuil': '神社', 'đền': '神社', '神社': '神社',
+            '寺': '寺', 'temple': '寺', '절': '寺', 'วัด': '寺', 'chùa': '寺',
+            
+            # 駅
+            '駅': '駅', 'station': '駅', '역': '駅', 'สถานี': '駅', 
+            'stasiun': '駅', 'ga': '駅', '车站': '駅', '車站': '駅',
+            
+            # 学校
+            '学校': '学校', 'school': '学校', '학교': '学校', 'โรงเรียน': '学校',
+            'sekolah': '学校', 'trường': '学校', '学校': '学校',
+            
+            # 公園
+            '公園': '公園', 'park': '公園', '공원': '公園', 'สวน': '公園',
+            'taman': '公園', 'công viên': '公園', '公园': '公園',
+            
+            # 海
+            '海': '海', 'sea': '海', 'beach': '海', '바다': '海', 'ทะเล': '海',
+            'laut': '海', 'pantai': '海', 'biển': '海',
+            
+            # 橋
+            '橋': '橋', 'bridge': '橋', '다리': '橋', 'สะพาน': '橋',
+            'jembatan': '橋', 'cầu': '橋', '桥': '橋',
+            
+            # カフェ・店
+            'カフェ': 'カフェ', 'cafe': 'カフェ', 'coffee': 'カフェ', '카페': 'カフェ',
+            '店': '店', 'shop': '店', 'store': '店', '가게': '店',
+        }
         
+        # フィルタキーワードを多言語で検出
+        if filter_keyword is None:
+            for keyword, ja_keyword in multilang_filters.items():
+                if keyword in user_question or keyword.lower() in question_lower:
+                    filter_keyword = ja_keyword
+                    print(f"多言語フィルタ検出: {keyword} → {ja_keyword}")
+                    break
+        
+        print(f"検索条件 - 場所: {locations}, アニメ: {animes}, フィルタ: {filter_keyword}, 除外ID: {len(shown_ids)}件")
+        
+        # ========================================
+        # 3. DBから聖地を検索（anime_url含む）
+        # ========================================
         conn = get_db_connection()
         spots_data = []
         
         if animes:
             for anime in animes:
-                results = conn.execute('SELECT * FROM spots WHERE anime_name LIKE ? LIMIT 15', [f'%{anime}%']).fetchall()
+                results = conn.execute('''
+                    SELECT s.*, a.anime_url 
+                    FROM spots s 
+                    LEFT JOIN anime a ON s.anime_name = a.anime
+                    WHERE s.anime_name = ?
+                ''', [anime]).fetchall()
                 spots_data.extend([dict(row) for row in results])
         
         if locations:
             for loc in locations:
                 results = conn.execute('''
-                    SELECT * FROM spots 
-                    WHERE address LIKE ? OR name LIKE ? OR note LIKE ?
-                    LIMIT 20
-                ''', [f'%{loc}%', f'%{loc}%', f'%{loc}%']).fetchall()
+                    SELECT s.*, a.anime_url 
+                    FROM spots s 
+                    LEFT JOIN anime a ON s.anime_name = a.anime
+                    WHERE s.address LIKE ?
+                ''', [f'%{loc}%']).fetchall()
                 spots_data.extend([dict(row) for row in results])
         
-        if not spots_data and keywords:
-            for kw in keywords[:3]:
-                results = conn.execute('''
-                    SELECT * FROM spots 
-                    WHERE LOWER(name) LIKE ? OR LOWER(anime_name) LIKE ? OR LOWER(address) LIKE ?
-                    LIMIT 10
-                ''', [f'%{kw.lower()}%', f'%{kw.lower()}%', f'%{kw.lower()}%']).fetchall()
-                spots_data.extend([dict(row) for row in results])
-        
-        seen = set()
-        unique = []
-        for s in spots_data:
-            if s['id'] not in seen:
-                seen.add(s['id'])
-                unique.append(s)
-        spots_data = unique
-        
+        # 結果がなければ全体から検索
         if not spots_data:
-            spots_data = [dict(row) for row in conn.execute('SELECT * FROM spots LIMIT 10').fetchall()]
+            keywords = user_question.replace('の', ' ').replace('を', ' ').replace('教えて', '').split()
+            for kw in keywords[:3]:
+                if len(kw) >= 2:
+                    results = conn.execute('''
+                        SELECT s.*, a.anime_url 
+                        FROM spots s 
+                        LEFT JOIN anime a ON s.anime_name = a.anime
+                        WHERE s.anime_name LIKE ? OR s.address LIKE ? OR s.name LIKE ?
+                        LIMIT 20
+                    ''', [f'%{kw}%', f'%{kw}%', f'%{kw}%']).fetchall()
+                    spots_data.extend([dict(row) for row in results])
         
         conn.close()
         
-        # 言語別の回答指示
+        # 重複を除去
+        seen = set()
+        unique_spots = []
+        for s in spots_data:
+            if s['id'] not in seen:
+                seen.add(s['id'])
+                unique_spots.append(s)
+        spots_data = unique_spots
+        
+        print(f"検索結果（フィルタ前）: {len(spots_data)}件")
+        
+        # ========================================
+        # フィルタを適用（神社だけ、駅だけなど）
+        # ========================================
+        if filter_keyword:
+            filtered_spots = []
+            for spot in spots_data:
+                spot_name = spot.get('name', '')
+                spot_note = spot.get('note', '') or ''
+                if filter_keyword in spot_name or filter_keyword in spot_note:
+                    filtered_spots.append(spot)
+            
+            print(f"フィルタ後（{filter_keyword}）: {len(filtered_spots)}件")
+            
+            if filtered_spots:
+                spots_data = filtered_spots
+            else:
+                # フィルタで0件の場合、メッセージを返す
+                return jsonify({
+                    'answer': f'「{filter_keyword}」に該当する聖地は見つかりませんでした。別の条件で検索してみてください！',
+                    'related_spots': [],
+                    'language': language,
+                    'context': last_context
+                })
+        
+        # ========================================
+        # 4. 表示済みを除外して5件取得
+        # ========================================
+        available_spots = [s for s in spots_data if s['id'] not in shown_ids]
+        display_spots = available_spots[:5]
+        
+        print(f"表示可能: {len(available_spots)}件, 今回表示: {len(display_spots)}件")
+        
+        if not display_spots:
+            return jsonify({
+                'answer': f'これ以上の聖地は見つかりませんでした。全{len(shown_ids)}件をご紹介しました！',
+                'related_spots': [],
+                'language': language,
+                'context': None
+            })
+        
+        # ========================================
+        # 5. AIで回答を生成（DBのデータのみ使用）
+        # ========================================
         lang_instructions = {
             'ja': '日本語で回答してください。',
             'en': 'Please answer in English.',
             'zh': '请用简体中文回答。',
             'ko': '한국어로 답변해 주세요.'
         }
-        
         lang_instruction = lang_instructions.get(language, '日本語で回答してください。')
         
-        summary = []
-        for spot in spots_data[:30]:
-            summary.append({
-                'id': spot['id'],
-                'name': spot['name'][:40],
-                'anime': spot['anime_name'][:40],
-                'address': spot['address'][:60]
+        # DBのデータをそのまま使う
+        spots_info = []
+        for spot in display_spots:
+            spots_info.append({
+                'anime': spot['anime_name'],
+                'name': spot['name'],
+                'address': spot['address'],
+                'note': spot.get('note', '')[:100] if spot.get('note') else ''
             })
+        
+        continuation_msg = ""
+        if is_continuation:
+            continuation_msg = f"\n【これは続きの結果です（{len(shown_ids)+1}〜{len(shown_ids)+len(display_spots)}件目）】"
+        
+        # 日本語以外の場合、英語タイトル併記を指示
+        title_instruction = ""
+        if language != 'ja':
+            title_instruction = """
+【アニメタイトルについて】
+日本語のアニメ名の後に、英語タイトルを括弧で併記してください。
+例: **『五等分の花嫁』(The Quintessential Quintuplets)**
+例: **『君の名は。』(Your Name)**
+例: **『鬼滅の刃』(Demon Slayer)**
+"""
         
         answer_prompt = f"""あなたはアニメ聖地巡礼の専門ガイドです。
 {lang_instruction}
+{continuation_msg}
+{title_instruction}
 
-以下は検索で見つかった聖地データです（全{len(spots_data)}件中{len(summary)}件）:
-{json.dumps(summary, ensure_ascii=False, indent=2)}
+【重要】以下のDBデータを使って、詳しく紹介してください。
 
-ユーザーの質問: {user_question}
+聖地データ:
+{json.dumps(spots_info, ensure_ascii=False, indent=2)}
 
-回答のルール:
-1. 必ず{lang_instruction}
-2. 見つかった聖地を紹介してください
-3. 具体的なおすすめを最大10件挙げてください
-4. 親しみやすく丁寧な口調で
+フォーマット（必ず守ること）:
+**『アニメ名』{' (English Title)' if language != 'ja' else ''}**（放送年・ジャンル）
+アニメの簡単なあらすじを1文で。
 
-回答:"""
-        
+📍 聖地名
+【登場シーン】何話のどんなシーンで登場するか
+【見どころ】実際に訪れた時の見どころやポイント
+
+ルール:
+1. 各聖地につき3〜4文で詳しく説明
+2. アニメの基本情報（放送年、ジャンル）を含める
+3. 登場シーンを具体的に説明
+4. 聖地巡礼の見どころを伝える
+5. DBのデータにない聖地は追加しない
+6. 住所は書かない（聖地名のみ）
+7. 余計な記号や装飾は使わない
+
+上記{len(display_spots)}件を紹介してください。"""
+
         answer_response = client.chat.completions.create(
             messages=[{"role": "user", "content": answer_prompt}],
             model=MODEL_NAME,
-            temperature=0.6,
+            temperature=0.4,
             max_tokens=2000,
         )
         
         ai_answer = answer_response.choices[0].message.content
-        
-        # AIの回答から[IDS:]部分を削除（あれば）
         ai_answer = re.sub(r'\[IDS:.*?\]', '', ai_answer).strip()
         
-        # 検索でヒットした全ての聖地をrelated_spotsとして返す
-        related = spots_data[:20]  # 最大20件
+        # ========================================
+        # 6. コンテキストを更新して返す
+        # ========================================
+        new_shown_ids = shown_ids + [s['id'] for s in display_spots]
         
-        return jsonify({'answer': ai_answer, 'related_spots': related, 'language': language})
+        context = {
+            'locations': locations,
+            'animes': animes,
+            'shown_ids': new_shown_ids,
+            'total': len(spots_data)
+        }
+        
+        remaining = len(available_spots) - len(display_spots)
+        if remaining > 0:
+            # 多言語対応の「もっと教えて」メッセージ
+            more_messages = {
+                'ja': f'💡 まだ{remaining}件あります。「もっと教えて」で続きを見れます！',
+                'en': f'💡 {remaining} more spots available. Say "show me more" to see more!',
+                'zh': f'💡 还有{remaining}个景点。输入"更多"查看更多！',
+                'zh-TW': f'💡 還有{remaining}個景點。輸入「更多」查看更多！',
+                'ko': f'💡 {remaining}개 더 있습니다. "더 보여줘"라고 말해보세요!',
+                'th': f'💡 ยังมีอีก {remaining} แห่ง พิมพ์ "เพิ่มเติม" เพื่อดูเพิ่ม!',
+                'id': f'💡 Masih ada {remaining} tempat lagi. Ketik "lebih banyak" untuk melihat!',
+                'vi': f'💡 Còn {remaining} địa điểm nữa. Nhập "thêm" để xem thêm!'
+            }
+            more_msg = more_messages.get(language, more_messages['en'])
+            ai_answer += f"\n\n{more_msg}"
+        
+        return jsonify({
+            'answer': ai_answer,
+            'related_spots': display_spots,
+            'language': language,
+            'context': context
+        })
         
     except Exception as e:
-        print(f"  AI")
-        return jsonify({'error': f': {str(e)}'}), 500
+        print(f"AI検索エラー: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'エラー: {str(e)}'}), 500
 
 @app.route('/api/ai-recommend', methods=['POST'])
 def ai_recommend():
-    """AI"""
+    """AIおすすめ - ジャンルランキング形式"""
     try:
         data = request.json
         history = data.get('history', [])
@@ -329,73 +606,108 @@ def ai_recommend():
         language = data.get('language', 'ja')
         
         if not history:
-            return jsonify({'error': ''}), 400
+            return jsonify({'error': '閲覧履歴がありません'}), 400
         
-        print(f"\n : {viewed_animes}")
+        print(f"\n閲覧済みアニメ: {viewed_animes}")
         
         conn = get_db_connection()
         
-        all_animes_query = conn.execute('SELECT DISTINCT anime_name FROM spots WHERE anime_name IS NOT NULL').fetchall()
-        all_anime_names = [row['anime_name'] for row in all_animes_query]
+        # ========================================
+        # 1. 閲覧済みアニメのジャンルを集計（カウント）
+        # ========================================
+        genre_count = {}
+        for anime_name in viewed_animes:
+            genre_query = conn.execute('''
+                SELECT g.name 
+                FROM genre g
+                JOIN anime_genre ag ON g.id = ag.genre_id
+                JOIN anime a ON a.id = ag.anime_id
+                WHERE a.anime = ?
+            ''', [anime_name]).fetchall()
+            for row in genre_query:
+                genre_name = row['name']
+                genre_count[genre_name] = genre_count.get(genre_name, 0) + 1
         
-        unviewed_animes = [anime for anime in all_anime_names if anime not in viewed_animes]
+        # ジャンルを出現回数順にソート
+        sorted_genres = sorted(genre_count.items(), key=lambda x: x[1], reverse=True)
+        print(f"ジャンル集計: {sorted_genres}")
         
-        print(f" : {unviewed_animes}")
+        if not sorted_genres:
+            conn.close()
+            return jsonify({'error': 'ジャンル情報が見つかりません', 'language': language}), 400
         
-        if not unviewed_animes:
-            return jsonify({'recommendation': '', 'language': language})
+        # ========================================
+        # 2. 各ジャンルごとにおすすめアニメを取得
+        # ========================================
+        recommendations = []
         
-        spots_data = []
-        for anime in unviewed_animes[:10]:
-            result = conn.execute('SELECT * FROM spots WHERE anime_name = ? ORDER BY RANDOM() LIMIT 1', [anime]).fetchone()
-            if result:
-                spots_data.append(dict(result))
+        for rank, (genre_name, count) in enumerate(sorted_genres[:3], 1):
+            # 星の数を決定（1位=5つ星、2位=4つ星、3位=3つ星）
+            stars = 6 - rank
+            
+            # このジャンルの未視聴アニメを取得
+            viewed_placeholders = ','.join(['?' for _ in viewed_animes])
+            recommend_query = f'''
+                SELECT DISTINCT a.anime as anime_name
+                FROM anime a
+                JOIN anime_genre ag ON a.id = ag.anime_id
+                JOIN genre g ON g.id = ag.genre_id
+                WHERE g.name = ?
+                AND a.anime NOT IN ({viewed_placeholders})
+                ORDER BY RANDOM()
+                LIMIT 5
+            '''
+            params = [genre_name] + viewed_animes
+            recommend_animes = conn.execute(recommend_query, params).fetchall()
+            
+            # 各アニメの聖地情報を取得
+            anime_spots = []
+            for anime_row in recommend_animes:
+                anime_name = anime_row['anime_name']
+                spot = conn.execute(
+                    'SELECT * FROM spots WHERE anime_name = ? ORDER BY RANDOM() LIMIT 1', 
+                    [anime_name]
+                ).fetchone()
+                if spot:
+                    anime_spots.append({
+                        'anime_name': anime_name,
+                        'spot': dict(spot)
+                    })
+            
+            recommendations.append({
+                'rank': rank,
+                'genre': genre_name,
+                'count': count,
+                'stars': stars,
+                'animes': anime_spots
+            })
         
         conn.close()
         
-        lang_map = {'ja': '日本語', 'en': 'English', 'zh': '中文', 'ko': '한국어'}
+        print(f"おすすめ結果: {len(recommendations)}ジャンル")
         
-        summary = [{'id': s['id'], 'name': s['name'][:30], 'anime': s['anime_name'][:30], 'address': s['address'][:40]} for s in spots_data]
-        
-        prompt = f"""アニメ聖地のおすすめを{lang_map.get(language, '日本語')}で。
-
-【閲覧済み】{', '.join(viewed_animes)}
-
-【未視聴候補（複数アニメ）】
-{json.dumps(summary, ensure_ascii=False, indent=2)}
-
-【重要】
-1. **異なるアニメから5つ選ぶ**
-2. 同じアニメ不可
-3. 多様なジャンル提案
-4. 各聖地の魅力説明
-5. おすすめ理由明確に
-
-例:
-「日常系がお好きですね。
-1. 『ふらいんぐうぃっち』弘前城 - 青森の自然...
-2. 『氷菓』高山市 - 古い町並み...
-3. 『たまゆら』竹原市 - 瀬戸内の港...」
-
-おすすめ:"""
-        
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model=MODEL_NAME,
-            temperature=0.8,
-            max_tokens=800,
-        )
-        
-        # おすすめ聖地もrelated_spotsとして返す
+        # ========================================
+        # 3. レスポンスを構築
+        # ========================================
         return jsonify({
-            'recommendation': response.choices[0].message.content, 
-            'related_spots': spots_data[:10],
+            'success': True,
+            'genre_ranking': sorted_genres[:5],
+            'recommendations': recommendations,
+            'total_viewed': len(viewed_animes),
             'language': language
         })
         
     except Exception as e:
-        print(f"  ")
-        return jsonify({'error': f': {str(e)}'}), 500
+        print(f"AIおすすめエラー: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'エラー: {str(e)}'}), 500
+        
+    except Exception as e:
+        print(f"AIおすすめエラー: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'エラー: {str(e)}'}), 500
 
 
 # ========================================
