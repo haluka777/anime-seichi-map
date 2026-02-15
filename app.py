@@ -21,12 +21,12 @@ client = Groq(api_key=GROQ_API_KEY)
 
 MODEL_NAME = "llama-3.3-70b-versatile"
 
-# Google Maps API（環境変数から取得）
+# Google Maps API 
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-# Google Custom Search API（環境変数から取得）
+# Google Custom Search API 
 GOOGLE_SEARCH_API_KEY = os.environ.get("GOOGLE_SEARCH_API_KEY")
-GOOGLE_SEARCH_ENGINE_ID = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "8079ebae211754c29")
+GOOGLE_SEARCH_ENGINE_ID = os.environ.get("GOOGLE_SEARCH_ENGINE_ID")
 
 
 def get_db_connection():
@@ -60,12 +60,16 @@ def translate_text():
         if not text:
             return jsonify({'error': 'テキストが空です'}), 400
         
-        # 言語コードと言語名のマッピング
+        # 言語コードと言語名のマッピング（8言語対応）
         language_config = {
             'en': {'name': 'English', 'instruction': 'Translate the following Japanese text to English. Output ONLY the translation, nothing else.'},
             'zh': {'name': '简体中文', 'instruction': '请将以下日语文本翻译成简体中文。只输出翻译结果，不要添加任何解释。'},
             'ko': {'name': '한국어', 'instruction': '다음 일본어 텍스트를 한국어로 번역해주세요. 번역 결과만 출력하고 다른 설명은 추가하지 마세요.'},
-            'ja': {'name': '日本語', 'instruction': '以下のテキストを日本語に翻訳してください。翻訳結果のみを出力してください。'}
+            'ja': {'name': '日本語', 'instruction': '以下のテキストを日本語に翻訳してください。翻訳結果のみを出力してください。'},
+            'hi': {'name': 'हिन्दी', 'instruction': 'निम्नलिखित जापानी पाठ का हिंदी में अनुवाद करें। केवल अनुवाद ही आउटपुट करें, कुछ और नहीं।'},
+            'es': {'name': 'Español', 'instruction': 'Traduce el siguiente texto japonés al español. Muestra SOLO la traducción, nada más.'},
+            'fr': {'name': 'Français', 'instruction': 'Traduisez le texte japonais suivant en français. Affichez UNIQUEMENT la traduction, rien d\'autre.'},
+            'pt': {'name': 'Português', 'instruction': 'Traduza o seguinte texto japonês para português. Mostre APENAS a tradução, nada mais.'}
         }
         
         config = language_config.get(target_language, language_config['en'])
@@ -308,21 +312,27 @@ def ai_search():
                 '가고시마': '鹿児島県', '오키나와': '沖縄県',
                 '도쿄': '東京都', '교토': '京都府', '오사카': '大阪府', '효고': '兵庫県', '후쿠오카': '福岡県',
                 
-                # タイ語 (ภาษาไทย)
-                'ฮอกไกโด': '北海道', 'โตเกียว': '東京都', 'เกียวโต': '京都府', 'โอซาก้า': '大阪府',
-                'ฮิโรชิม่า': '広島県', 'โอกินาว่า': '沖縄県', 'นารา': '奈良県', 'โคเบะ': '兵庫県',
-                
-                # ベトナム語 (Tiếng Việt)  
-                'bắc hải đạo': '北海道', 'đông kinh': '東京都', 'kinh đô': '京都府', 'đại phản': '大阪府',
-                
-                # インドネシア語 (Bahasa Indonesia) - 英語と同じローマ字
-                
                 # 中国語簡体字 (简体中文)
-                '北海道': '北海道', '东京': '東京都', '京都': '京都府', '大阪': '大阪府',
+                '东京': '東京都', '京都': '京都府', '大阪': '大阪府',
                 '广岛': '広島県', '冲绳': '沖縄県', '奈良': '奈良県',
                 
                 # 中国語繁体字 (繁體中文)
-                '東京': '東京都', '廣島': '広島県', '沖繩': '沖縄県',
+                '廣島': '広島県', '沖繩': '沖縄県',
+                
+                # ヒンディー語 (हिन्दी)
+                'क्योटो': '京都府', 'टोक्यो': '東京都', 'ओसाका': '大阪府',
+                'हिरोशिमा': '広島県', 'ओकिनावा': '沖縄県', 'नारा': '奈良県',
+                'होक्काइदो': '北海道', 'क्यूशू': '福岡県',
+                
+                # スペイン語 (Español) - Kioto, Tokio等のスペイン語表記
+                'kioto': '京都府', 'tokio': '東京都', 'osaka': '大阪府',
+                'hiroshima': '広島県', 'okinawa': '沖縄県', 'nara': '奈良県',
+                
+                # フランス語 (Français) - 英語と同様だがアクセント付きも対応
+                'kyôto': '京都府', 'tôkyô': '東京都',
+                
+                # ポルトガル語 (Português) - スペイン語と類似
+                'quioto': '京都府', 'tóquio': '東京都',
             }
             
             # 小文字でも検索できるように
@@ -344,37 +354,49 @@ def ai_search():
             conn.close()
         
         # ========================================
-        # 多言語フィルタキーワード対応
+        # 多言語フィルタキーワード対応（8言語）
         # ========================================
         multilang_filters = {
             # 神社・寺
             '神社': '神社', 'shrine': '神社', '신사': '神社', 'ศาลเจ้า': '神社', 
-            'kuil': '神社', 'đền': '神社', '神社': '神社',
+            'kuil': '神社', 'đền': '神社', 'santuario': '神社', 'sanctuaire': '神社',
+            'मंदिर': '神社', 'templo': '神社',
             '寺': '寺', 'temple': '寺', '절': '寺', 'วัด': '寺', 'chùa': '寺',
             
             # 駅
             '駅': '駅', 'station': '駅', '역': '駅', 'สถานี': '駅', 
             'stasiun': '駅', 'ga': '駅', '车站': '駅', '車站': '駅',
+            'estación': '駅', 'estação': '駅', 'gare': '駅', 'स्टेशन': '駅',
             
             # 学校
             '学校': '学校', 'school': '学校', '학교': '学校', 'โรงเรียน': '学校',
-            'sekolah': '学校', 'trường': '学校', '学校': '学校',
+            'sekolah': '学校', 'trường': '学校', 'escuela': '学校', 'escola': '学校',
+            'école': '学校', 'स्कूल': '学校',
             
             # 公園
             '公園': '公園', 'park': '公園', '공원': '公園', 'สวน': '公園',
             'taman': '公園', 'công viên': '公園', '公园': '公園',
+            'parque': '公園', 'parc': '公園', 'पार्क': '公園',
             
             # 海
             '海': '海', 'sea': '海', 'beach': '海', '바다': '海', 'ทะเล': '海',
-            'laut': '海', 'pantai': '海', 'biển': '海',
+            'laut': '海', 'pantai': '海', 'biển': '海', 'mar': '海', 'playa': '海',
+            'plage': '海', 'mer': '海', 'समुद्र': '海', 'praia': '海',
             
             # 橋
             '橋': '橋', 'bridge': '橋', '다리': '橋', 'สะพาน': '橋',
-            'jembatan': '橋', 'cầu': '橋', '桥': '橋',
+            'jembatan': '橋', 'cầu': '橋', '桥': '橋', 'puente': '橋',
+            'pont': '橋', 'ponte': '橋', 'पुल': '橋',
             
             # カフェ・店
             'カフェ': 'カフェ', 'cafe': 'カフェ', 'coffee': 'カフェ', '카페': 'カフェ',
+            'café': 'カフェ', 'कैफ़े': 'カフェ',
             '店': '店', 'shop': '店', 'store': '店', '가게': '店',
+            'tienda': '店', 'loja': '店', 'boutique': '店', 'magasin': '店', 'दुकान': '店',
+            
+            # アニメ（キーワードとして認識）
+            'anime': None, 'アニメ': None, '애니메이션': None, '动漫': None,
+            'エनीमे': None, 'animé': None,
         }
         
         # フィルタキーワードを多言語で検出
@@ -487,9 +509,13 @@ def ai_search():
             'ja': '日本語で回答してください。',
             'en': 'Please answer in English.',
             'zh': '请用简体中文回答。',
-            'ko': '한국어로 답변해 주세요.'
+            'ko': '한국어로 답변해 주세요.',
+            'hi': 'कृपया हिंदी में उत्तर दें।',
+            'es': 'Por favor responde en español.',
+            'fr': 'Veuillez répondre en français.',
+            'pt': 'Por favor, responda em português.'
         }
-        lang_instruction = lang_instructions.get(language, '日本語で回答してください。')
+        lang_instruction = lang_instructions.get(language, 'Please answer in English.')
         
         # DBのデータをそのまま使う
         spots_info = []
@@ -503,47 +529,47 @@ def ai_search():
         
         continuation_msg = ""
         if is_continuation:
-            continuation_msg = f"\n【これは続きの結果です（{len(shown_ids)+1}〜{len(shown_ids)+len(display_spots)}件目）】"
+            continuation_msg = f"\n[This is a continuation - showing results {len(shown_ids)+1} to {len(shown_ids)+len(display_spots)}]"
         
         # 日本語以外の場合、英語タイトル併記を指示
         title_instruction = ""
         if language != 'ja':
             title_instruction = """
-【アニメタイトルについて】
-日本語のアニメ名の後に、英語タイトルを括弧で併記してください。
-例: **『五等分の花嫁』(The Quintessential Quintuplets)**
-例: **『君の名は。』(Your Name)**
-例: **『鬼滅の刃』(Demon Slayer)**
+[About Anime Titles]
+After the Japanese anime title, please add the English title in parentheses.
+Example: **『五等分の花嫁』(The Quintessential Quintuplets)**
+Example: **『君の名は。』(Your Name)**
+Example: **『鬼滅の刃』(Demon Slayer)**
 """
         
-        answer_prompt = f"""あなたはアニメ聖地巡礼の専門ガイドです。
+        answer_prompt = f"""You are an expert guide for anime pilgrimage sites (seichi).
 {lang_instruction}
 {continuation_msg}
 {title_instruction}
 
-【重要】以下のDBデータを使って、詳しく紹介してください。
+[IMPORTANT] Use the following database data to provide detailed information.
 
-聖地データ:
+Pilgrimage site data:
 {json.dumps(spots_info, ensure_ascii=False, indent=2)}
 
-フォーマット（必ず守ること）:
-**『アニメ名』{' (English Title)' if language != 'ja' else ''}**（放送年・ジャンル）
-アニメの簡単なあらすじを1文で。
+Format (must follow):
+**『Anime Name』{' (English Title)' if language != 'ja' else ''}**(Year・Genre)
+Brief synopsis of the anime in one sentence.
 
-📍 聖地名
-【登場シーン】何話のどんなシーンで登場するか
-【見どころ】実際に訪れた時の見どころやポイント
+📍 Location Name
+【Scene】Which episode and what scene it appears in
+【Highlights】Points of interest when visiting
 
-ルール:
-1. 各聖地につき3〜4文で詳しく説明
-2. アニメの基本情報（放送年、ジャンル）を含める
-3. 登場シーンを具体的に説明
-4. 聖地巡礼の見どころを伝える
-5. DBのデータにない聖地は追加しない
-6. 住所は書かない（聖地名のみ）
-7. 余計な記号や装飾は使わない
+Rules:
+1. Describe each location in 3-4 sentences
+2. Include basic anime info (broadcast year, genre)
+3. Explain the specific scene appearance
+4. Share pilgrimage highlights and tips
+5. Do not add locations not in the database
+6. Do not include addresses (location name only)
+7. Do not use excessive symbols or decorations
 
-上記{len(display_spots)}件を紹介してください。"""
+Please introduce the above {len(display_spots)} locations."""
 
         answer_response = client.chat.completions.create(
             messages=[{"role": "user", "content": answer_prompt}],
@@ -569,16 +595,16 @@ def ai_search():
         
         remaining = len(available_spots) - len(display_spots)
         if remaining > 0:
-            # 多言語対応の「もっと教えて」メッセージ
+            # 多言語対応の「もっと教えて」メッセージ（8言語）
             more_messages = {
                 'ja': f'💡 まだ{remaining}件あります。「もっと教えて」で続きを見れます！',
                 'en': f'💡 {remaining} more spots available. Say "show me more" to see more!',
                 'zh': f'💡 还有{remaining}个景点。输入"更多"查看更多！',
-                'zh-TW': f'💡 還有{remaining}個景點。輸入「更多」查看更多！',
                 'ko': f'💡 {remaining}개 더 있습니다. "더 보여줘"라고 말해보세요!',
-                'th': f'💡 ยังมีอีก {remaining} แห่ง พิมพ์ "เพิ่มเติม" เพื่อดูเพิ่ม!',
-                'id': f'💡 Masih ada {remaining} tempat lagi. Ketik "lebih banyak" untuk melihat!',
-                'vi': f'💡 Còn {remaining} địa điểm nữa. Nhập "thêm" để xem thêm!'
+                'hi': f'💡 {remaining} और स्थान उपलब्ध हैं। "और दिखाओ" कहें!',
+                'es': f'💡 Hay {remaining} lugares más. ¡Di "muéstrame más" para ver más!',
+                'fr': f'💡 {remaining} autres lieux disponibles. Dites "montre-moi plus" pour en voir plus!',
+                'pt': f'💡 Mais {remaining} locais disponíveis. Diga "mostre mais" para ver mais!'
             }
             more_msg = more_messages.get(language, more_messages['en'])
             ai_answer += f"\n\n{more_msg}"
