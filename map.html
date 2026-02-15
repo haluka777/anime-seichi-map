@@ -71,39 +71,39 @@
     <div id="category-filter">
         <button class="category-btn active" data-category="all" onclick="filterByCategory('all')">
             <span class="category-icon">📍</span>
-            <span class="category-text">すべて</span>
+            <span class="category-text" id="cat-text-all">すべて</span>
         </button>
         <button class="category-btn" data-category="shrine" onclick="filterByCategory('shrine')">
             <span class="category-icon">⛩️</span>
-            <span class="category-text">神社・寺院</span>
+            <span class="category-text" id="cat-text-shrine">神社・寺院</span>
         </button>
         <button class="category-btn" data-category="station" onclick="filterByCategory('station')">
             <span class="category-icon">🚉</span>
-            <span class="category-text">駅・鉄道</span>
+            <span class="category-text" id="cat-text-station">駅・鉄道</span>
         </button>
         <button class="category-btn" data-category="school" onclick="filterByCategory('school')">
             <span class="category-icon">🏫</span>
-            <span class="category-text">学校</span>
+            <span class="category-text" id="cat-text-school">学校</span>
         </button>
         <button class="category-btn" data-category="park" onclick="filterByCategory('park')">
             <span class="category-icon">🌳</span>
-            <span class="category-text">公園</span>
+            <span class="category-text" id="cat-text-park">公園</span>
         </button>
         <button class="category-btn" data-category="sea" onclick="filterByCategory('sea')">
             <span class="category-icon">🌊</span>
-            <span class="category-text">海・川</span>
+            <span class="category-text" id="cat-text-sea">海・川</span>
         </button>
         <button class="category-btn" data-category="bridge" onclick="filterByCategory('bridge')">
             <span class="category-icon">🌉</span>
-            <span class="category-text">橋</span>
+            <span class="category-text" id="cat-text-bridge">橋</span>
         </button>
         <button class="category-btn" data-category="shop" onclick="filterByCategory('shop')">
             <span class="category-icon">🏪</span>
-            <span class="category-text">店舗</span>
+            <span class="category-text" id="cat-text-shop">店舗</span>
         </button>
         <button class="category-btn" data-category="tower" onclick="filterByCategory('tower')">
             <span class="category-icon">🗼</span>
-            <span class="category-text">展望台</span>
+            <span class="category-text" id="cat-text-tower">展望台</span>
         </button>
     </div>
 
@@ -113,7 +113,7 @@
     <!-- ハンバーガーメニュー -->
     <div id="hamburger-menu">
         <div class="menu-header">
-            <div style="font-size: 20px; color: #202124;">メニュー</div>
+            <div id="menu-title" style="font-size: 20px; color: #202124;">メニュー</div>
             <button class="menu-close-btn" onclick="toggleHamburgerMenu()">
                 <svg class="icon" viewBox="0 0 24 24">
                     <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -125,28 +125,28 @@
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
             </svg>
-            <span>閲覧履歴</span>
+            <span id="menu-text-history">閲覧履歴</span>
         </div>
 
         <div class="menu-item" onclick="showRecommendations()">
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
             </svg>
-            <span>AIおすすめ</span>
+            <span id="menu-text-recommend">AIおすすめ</span>
         </div>
 
         <div class="menu-item" onclick="toggleAIPanel()">
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
             </svg>
-            <span>AI聖地検索</span>
+            <span id="menu-text-ai-search">AI聖地検索</span>
         </div>
 
         <div class="menu-item" onclick="toggleSidebar()">
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M3 9h14V7H3v2zm0 4h14v-2H3v2zm0 4h14v-2H3v2zm16 0h2v-2h-2v2zm0-10v2h2V7h-2zm0 6h2v-2h-2v2z"/>
             </svg>
-            <span>サイドバーを表示</span>
+            <span id="menu-text-sidebar">サイドバーを表示</span>
         </div>
 
         <div class="menu-item" onclick="openRoutePlanner()">
@@ -154,8 +154,50 @@
         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
         <circle cx="12" cy="10" r="3"></circle>
     </svg>
-    <span>ルートプランナー</span>
+    <span id="menu-text-route">ルートプランナー</span>
 </div>
+
+        <!-- 注意書きセクション -->
+        <div class="menu-divider" style="border-top: 1px solid #e0e0e0; margin: 15px 0;"></div>
+        
+        <div class="menu-notice" style="padding: 0 20px 20px 20px; font-size: 11px; color: #666; line-height: 1.6;">
+            <div style="font-weight: bold; margin-bottom: 10px; color: #333; font-size: 12px;" id="notice-title">⚠️ ご利用にあたって</div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #1a73e8;">📊</span> 
+                <span id="notice-data">すべてのアニメの聖地を網羅しているわけではありません</span>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #1a73e8;">🤖</span> 
+                <span id="notice-ai">AIには自然な言葉で質問してください（例：「京都のアニメ聖地を教えて」）</span>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #1a73e8;">📍</span> 
+                <span id="notice-accuracy">聖地情報は変更される場合があります。訪問前にご確認ください</span>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #1a73e8;">🌐</span> 
+                <span id="notice-translation">翻訳はAIによる自動翻訳です。正確でない場合があります</span>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #ea4335;">⛔</span> 
+                <span id="notice-private">聖地には私有地が含まれる場合があります。立入禁止区域には入らないでください</span>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="color: #ea4335;">📷</span> 
+                <span id="notice-photo">撮影時は周囲の迷惑にならないようご注意ください</span>
+            </div>
+            
+            <div style="margin-bottom: 0;">
+                <span style="color: #ea4335;">🙏</span> 
+                <span id="notice-manner">地元の方々への配慮をお願いします</span>
+            </div>
+        </div>
     </div>
 
     <!-- 左サイドバー（聖地リスト） -->
@@ -251,7 +293,7 @@
     <!-- AIおすすめサイドバー -->
 <div id="recommend-sidebar">
     <div style="padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 20px; margin: 0;">🌟 AIおすすめ</h2>
+        <h2 id="recommend-sidebar-title" style="font-size: 20px; margin: 0;">🌟 AIおすすめ</h2>
         <button class="menu-close-btn" onclick="toggleRecommendSidebar()">
             <svg class="icon" viewBox="0 0 24 24">
                 <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -264,7 +306,7 @@
     <!-- 閲覧履歴サイドバー -->
     <div id="history-sidebar">
         <div id="history-header">
-            <h2>閲覧履歴</h2>
+            <h2 id="history-sidebar-title">閲覧履歴</h2>
             <button class="menu-close-btn" onclick="toggleHistorySidebar()">
                 <svg class="icon" viewBox="0 0 24 24">
                     <path fill="#5f6368" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -272,7 +314,7 @@
             </button>
         </div>
         <div id="history-content">
-            <div class="empty-history">
+            <div class="empty-history" id="history-empty-text">
                 まだ閲覧履歴がありません。<br>
                 聖地をクリックしてみてください!
             </div>
