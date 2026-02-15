@@ -65,6 +65,643 @@ const languageData = {
     pt: { flag: '🇧🇷', name: 'Português' }
 };
 
+// ========================================
+// UI翻訳データ（8言語対応）
+// ========================================
+const uiTranslations = {
+    ja: {
+        // ヘッダー・検索
+        searchPlaceholder: '聖地を検索...',
+        
+        // カテゴリフィルタ
+        categoryAll: 'すべて',
+        categoryShrine: '神社・寺',
+        categoryStation: '駅',
+        categorySchool: '学校',
+        categoryPark: '公園',
+        categorySea: '海・川',
+        categoryBridge: '橋',
+        categoryShop: '店舗',
+        categoryTower: 'タワー',
+        
+        // フィルタ
+        allAnime: 'すべてのアニメ',
+        spotsCount: '件の聖地',
+        
+        // AIチャット
+        aiChatTitle: 'AI聖地検索',
+        aiChatPlaceholder: '例: 京都のアニメ聖地を教えて',
+        aiChatSend: '送信',
+        aiChatSearching: '検索中...',
+        aiSpotsFound: '件の聖地が見つかりました',
+        aiShowOnMap: 'すべて地図に表示',
+        aiTellMore: 'もっと教えて',
+        aiError: 'エラー',
+        
+        // 詳細パネル
+        detailTitle: '聖地詳細',
+        detailAnimeName: '作品名',
+        detailSpotName: '聖地名',
+        detailAddress: '住所',
+        detailTranslate: '翻訳',
+        detailAddToRoute: 'ルートに追加',
+        
+        // メニュー
+        menuTitle: 'メニュー',
+        menuHistory: '閲覧履歴',
+        menuRecommend: 'AIおすすめ',
+        menuRoute: 'ルートプランナー',
+        menuCurrentLocation: '現在地',
+        menuSidebar: 'サイドバーを表示',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 AIおすすめ',
+        recommendGenreAnalysis: '📊 あなたの好みのジャンル分析',
+        recommendViewedWorks: '閲覧した作品',
+        recommendWorksUnit: '件',
+        recommendRank: '位',
+        recommendTimes: '回',
+        recommendViewCount: '閲覧回数',
+        recommendNoWorks: 'おすすめ作品がありません',
+        
+        // 注意書き
+        noticeTitle: '⚠️ ご利用にあたって',
+        noticeData: 'すべてのアニメの聖地を網羅しているわけではありません',
+        noticeAi: 'AIには自然な言葉で質問してください（例：「京都のアニメ聖地を教えて」）',
+        noticeAccuracy: '聖地情報は変更される場合があります。訪問前にご確認ください',
+        noticeTranslation: '翻訳はAIによる自動翻訳です。正確でない場合があります',
+        noticePrivate: '聖地には私有地が含まれる場合があります。立入禁止区域には入らないでください',
+        noticePhoto: '撮影時は周囲の迷惑にならないようご注意ください',
+        noticeManner: '地元の方々への配慮をお願いします',
+        
+        // その他
+        loading: '読み込み中...',
+        noResults: '該当する聖地がありません'
+    },
+    en: {
+        searchPlaceholder: 'Search locations...',
+        
+        categoryAll: 'All',
+        categoryShrine: 'Shrine/Temple',
+        categoryStation: 'Station',
+        categorySchool: 'School',
+        categoryPark: 'Park',
+        categorySea: 'Sea/River',
+        categoryBridge: 'Bridge',
+        categoryShop: 'Shop',
+        categoryTower: 'Tower',
+        
+        allAnime: 'All Anime',
+        spotsCount: ' locations',
+        
+        aiChatTitle: 'AI Location Search',
+        aiChatPlaceholder: 'e.g. Show me anime locations in Kyoto',
+        aiChatSend: 'Send',
+        aiChatSearching: 'Searching...',
+        aiSpotsFound: ' locations found',
+        aiShowOnMap: 'Show all on map',
+        aiTellMore: 'Tell me more',
+        aiError: 'Error',
+        
+        detailTitle: 'Location Details',
+        detailAnimeName: 'Anime',
+        detailSpotName: 'Location',
+        detailAddress: 'Address',
+        detailTranslate: 'Translate',
+        detailAddToRoute: 'Add to Route',
+        
+        menuTitle: 'Menu',
+        menuHistory: 'History',
+        menuRecommend: 'AI Recommend',
+        menuRoute: 'Route Planner',
+        menuCurrentLocation: 'My Location',
+        menuSidebar: 'Show Sidebar',
+        
+        loading: 'Loading...',
+        noResults: 'No locations found',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 AI Recommend',
+        recommendGenreAnalysis: '📊 Your Genre Analysis',
+        recommendViewedWorks: 'Viewed works',
+        recommendWorksUnit: '',
+        recommendRank: '',
+        recommendTimes: ' times',
+        recommendViewCount: 'View count',
+        recommendNoWorks: 'No recommendations available',
+        
+        // 注意書き
+        noticeTitle: '⚠️ Important Notice',
+        noticeData: 'This map does not cover all anime pilgrimage sites',
+        noticeAi: 'Ask AI in natural language (e.g. "Show me anime spots in Kyoto")',
+        noticeAccuracy: 'Location info may change. Please verify before visiting',
+        noticeTranslation: 'Translations are AI-generated and may not be accurate',
+        noticePrivate: 'Some locations are private property. Do not enter restricted areas',
+        noticePhoto: 'Please be considerate when taking photos',
+        noticeManner: 'Please be respectful to local residents'
+    },
+    zh: {
+        searchPlaceholder: '搜索圣地...',
+        
+        categoryAll: '全部',
+        categoryShrine: '神社/寺庙',
+        categoryStation: '车站',
+        categorySchool: '学校',
+        categoryPark: '公园',
+        categorySea: '海/河',
+        categoryBridge: '桥',
+        categoryShop: '商店',
+        categoryTower: '塔',
+        
+        allAnime: '所有动漫',
+        spotsCount: '个圣地',
+        
+        aiChatTitle: 'AI圣地搜索',
+        aiChatPlaceholder: '例如: 告诉我京都的动漫圣地',
+        aiChatSend: '发送',
+        aiChatSearching: '搜索中...',
+        aiSpotsFound: '个圣地被找到',
+        aiShowOnMap: '在地图上显示全部',
+        aiTellMore: '告诉我更多',
+        aiError: '错误',
+        
+        detailTitle: '圣地详情',
+        detailAnimeName: '动漫名',
+        detailSpotName: '圣地名',
+        detailAddress: '地址',
+        detailTranslate: '翻译',
+        detailAddToRoute: '添加到路线',
+        
+        menuTitle: '菜单',
+        menuHistory: '浏览历史',
+        menuRecommend: 'AI推荐',
+        menuRoute: '路线规划',
+        menuCurrentLocation: '我的位置',
+        menuSidebar: '显示侧边栏',
+        
+        loading: '加载中...',
+        noResults: '没有找到圣地',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 AI推荐',
+        recommendGenreAnalysis: '📊 你的类型分析',
+        recommendViewedWorks: '已浏览作品',
+        recommendWorksUnit: '部',
+        recommendRank: '位',
+        recommendTimes: '次',
+        recommendViewCount: '浏览次数',
+        recommendNoWorks: '没有推荐作品',
+        
+        // 注意書き
+        noticeTitle: '⚠️ 使用须知',
+        noticeData: '本地图并未涵盖所有动漫圣地',
+        noticeAi: '请用自然语言向AI提问（例：「告诉我京都的动漫圣地」）',
+        noticeAccuracy: '圣地信息可能会变更，请在访问前确认',
+        noticeTranslation: '翻译由AI自动生成，可能不够准确',
+        noticePrivate: '部分圣地为私有财产，请勿进入禁止区域',
+        noticePhoto: '拍照时请注意不要打扰他人',
+        noticeManner: '请尊重当地居民'
+    },
+    ko: {
+        searchPlaceholder: '성지 검색...',
+        
+        categoryAll: '전체',
+        categoryShrine: '신사/사찰',
+        categoryStation: '역',
+        categorySchool: '학교',
+        categoryPark: '공원',
+        categorySea: '바다/강',
+        categoryBridge: '다리',
+        categoryShop: '상점',
+        categoryTower: '타워',
+        
+        allAnime: '모든 애니메이션',
+        spotsCount: '개의 성지',
+        
+        aiChatTitle: 'AI 성지 검색',
+        aiChatPlaceholder: '예: 교토의 애니메이션 성지를 알려줘',
+        aiChatSend: '전송',
+        aiChatSearching: '검색 중...',
+        aiSpotsFound: '개의 성지를 찾았습니다',
+        aiShowOnMap: '지도에 모두 표시',
+        aiTellMore: '더 알려줘',
+        aiError: '오류',
+        
+        detailTitle: '성지 상세',
+        detailAnimeName: '애니메이션',
+        detailSpotName: '성지명',
+        detailAddress: '주소',
+        detailTranslate: '번역',
+        detailAddToRoute: '경로에 추가',
+        
+        menuTitle: '메뉴',
+        menuHistory: '열람 기록',
+        menuRecommend: 'AI 추천',
+        menuRoute: '경로 플래너',
+        menuCurrentLocation: '내 위치',
+        menuSidebar: '사이드바 표시',
+        
+        loading: '로딩 중...',
+        noResults: '해당하는 성지가 없습니다',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 AI 추천',
+        recommendGenreAnalysis: '📊 당신의 장르 분석',
+        recommendViewedWorks: '열람한 작품',
+        recommendWorksUnit: '개',
+        recommendRank: '위',
+        recommendTimes: '회',
+        recommendViewCount: '열람 횟수',
+        recommendNoWorks: '추천 작품이 없습니다',
+        
+        // 注意書き
+        noticeTitle: '⚠️ 이용 안내',
+        noticeData: '모든 애니메이션 성지를 망라하고 있지 않습니다',
+        noticeAi: 'AI에게 자연스러운 언어로 질문하세요 (예: 「교토의 애니메이션 성지를 알려줘」)',
+        noticeAccuracy: '성지 정보는 변경될 수 있습니다. 방문 전에 확인하세요',
+        noticeTranslation: '번역은 AI 자동 번역입니다. 정확하지 않을 수 있습니다',
+        noticePrivate: '일부 성지는 사유지입니다. 출입 금지 구역에 들어가지 마세요',
+        noticePhoto: '촬영 시 주변에 피해를 주지 않도록 주의하세요',
+        noticeManner: '지역 주민들에 대한 배려를 부탁드립니다'
+    },
+    hi: {
+        searchPlaceholder: 'स्थान खोजें...',
+        
+        categoryAll: 'सभी',
+        categoryShrine: 'मंदिर',
+        categoryStation: 'स्टेशन',
+        categorySchool: 'स्कूल',
+        categoryPark: 'पार्क',
+        categorySea: 'समुद्र/नदी',
+        categoryBridge: 'पुल',
+        categoryShop: 'दुकान',
+        categoryTower: 'टावर',
+        
+        allAnime: 'सभी एनीमे',
+        spotsCount: ' स्थान',
+        
+        aiChatTitle: 'AI स्थान खोज',
+        aiChatPlaceholder: 'उदाहरण: क्योटो में एनीमे स्थान दिखाओ',
+        aiChatSend: 'भेजें',
+        aiChatSearching: 'खोज रहा है...',
+        aiSpotsFound: ' स्थान मिले',
+        aiShowOnMap: 'मानचित्र पर सभी दिखाएं',
+        aiTellMore: 'और बताओ',
+        aiError: 'त्रुटि',
+        
+        detailTitle: 'स्थान विवरण',
+        detailAnimeName: 'एनीमे',
+        detailSpotName: 'स्थान',
+        detailAddress: 'पता',
+        detailTranslate: 'अनुवाद',
+        detailAddToRoute: 'रूट में जोड़ें',
+        
+        menuTitle: 'मेनू',
+        menuHistory: 'इतिहास',
+        menuRecommend: 'AI सुझाव',
+        menuRoute: 'रूट प्लानर',
+        menuCurrentLocation: 'मेरा स्थान',
+        menuSidebar: 'साइडबार दिखाएं',
+        
+        loading: 'लोड हो रहा है...',
+        noResults: 'कोई स्थान नहीं मिला',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 AI सुझाव',
+        recommendGenreAnalysis: '📊 आपकी शैली विश्लेषण',
+        recommendViewedWorks: 'देखी गई रचनाएं',
+        recommendWorksUnit: '',
+        recommendRank: '',
+        recommendTimes: ' बार',
+        recommendViewCount: 'देखने की संख्या',
+        recommendNoWorks: 'कोई सुझाव उपलब्ध नहीं',
+        
+        // 注意書き
+        noticeTitle: '⚠️ उपयोग के लिए नोट',
+        noticeData: 'इस मानचित्र में सभी एनीमे तीर्थ स्थल शामिल नहीं हैं',
+        noticeAi: 'AI से प्राकृतिक भाषा में पूछें (उदाहरण: "क्योटो में एनीमे स्थान दिखाओ")',
+        noticeAccuracy: 'स्थान की जानकारी बदल सकती है। यात्रा से पहले पुष्टि करें',
+        noticeTranslation: 'अनुवाद AI द्वारा स्वचालित है और सटीक नहीं हो सकता',
+        noticePrivate: 'कुछ स्थान निजी संपत्ति हैं। प्रतिबंधित क्षेत्रों में प्रवेश न करें',
+        noticePhoto: 'फोटो लेते समय दूसरों को परेशान न करें',
+        noticeManner: 'कृपया स्थानीय निवासियों का सम्मान करें'
+    },
+    es: {
+        searchPlaceholder: 'Buscar lugares...',
+        
+        categoryAll: 'Todos',
+        categoryShrine: 'Santuario/Templo',
+        categoryStation: 'Estación',
+        categorySchool: 'Escuela',
+        categoryPark: 'Parque',
+        categorySea: 'Mar/Río',
+        categoryBridge: 'Puente',
+        categoryShop: 'Tienda',
+        categoryTower: 'Torre',
+        
+        allAnime: 'Todos los Anime',
+        spotsCount: ' lugares',
+        
+        aiChatTitle: 'Búsqueda AI',
+        aiChatPlaceholder: 'Ej: Muéstrame lugares de anime en Kioto',
+        aiChatSend: 'Enviar',
+        aiChatSearching: 'Buscando...',
+        aiSpotsFound: ' lugares encontrados',
+        aiShowOnMap: 'Mostrar todo en el mapa',
+        aiTellMore: 'Cuéntame más',
+        aiError: 'Error',
+        
+        detailTitle: 'Detalles del Lugar',
+        detailAnimeName: 'Anime',
+        detailSpotName: 'Lugar',
+        detailAddress: 'Dirección',
+        detailTranslate: 'Traducir',
+        detailAddToRoute: 'Añadir a Ruta',
+        
+        menuTitle: 'Menú',
+        menuHistory: 'Historial',
+        menuRecommend: 'Recomendaciones AI',
+        menuRoute: 'Planificador de Ruta',
+        menuCurrentLocation: 'Mi Ubicación',
+        menuSidebar: 'Mostrar Barra Lateral',
+        
+        loading: 'Cargando...',
+        noResults: 'No se encontraron lugares',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 Recomendaciones AI',
+        recommendGenreAnalysis: '📊 Tu Análisis de Género',
+        recommendViewedWorks: 'Obras vistas',
+        recommendWorksUnit: '',
+        recommendRank: '°',
+        recommendTimes: ' veces',
+        recommendViewCount: 'Veces visto',
+        recommendNoWorks: 'No hay recomendaciones',
+        
+        // 注意書き
+        noticeTitle: '⚠️ Aviso Importante',
+        noticeData: 'Este mapa no cubre todos los lugares de peregrinación de anime',
+        noticeAi: 'Pregunta al AI en lenguaje natural (ej: "Muéstrame lugares de anime en Kioto")',
+        noticeAccuracy: 'La información puede cambiar. Verifica antes de visitar',
+        noticeTranslation: 'Las traducciones son automáticas y pueden no ser precisas',
+        noticePrivate: 'Algunos lugares son propiedad privada. No entres en áreas restringidas',
+        noticePhoto: 'Ten cuidado de no molestar a otros al tomar fotos',
+        noticeManner: 'Por favor, respeta a los residentes locales'
+    },
+    fr: {
+        searchPlaceholder: 'Rechercher des lieux...',
+        
+        categoryAll: 'Tous',
+        categoryShrine: 'Sanctuaire/Temple',
+        categoryStation: 'Gare',
+        categorySchool: 'École',
+        categoryPark: 'Parc',
+        categorySea: 'Mer/Rivière',
+        categoryBridge: 'Pont',
+        categoryShop: 'Boutique',
+        categoryTower: 'Tour',
+        
+        allAnime: 'Tous les Anime',
+        spotsCount: ' lieux',
+        
+        aiChatTitle: 'Recherche AI',
+        aiChatPlaceholder: 'Ex: Montre-moi les lieux d\'anime à Kyoto',
+        aiChatSend: 'Envoyer',
+        aiChatSearching: 'Recherche...',
+        aiSpotsFound: ' lieux trouvés',
+        aiShowOnMap: 'Tout afficher sur la carte',
+        aiTellMore: 'Dis-moi plus',
+        aiError: 'Erreur',
+        
+        detailTitle: 'Détails du Lieu',
+        detailAnimeName: 'Anime',
+        detailSpotName: 'Lieu',
+        detailAddress: 'Adresse',
+        detailTranslate: 'Traduire',
+        detailAddToRoute: 'Ajouter à l\'itinéraire',
+        
+        menuTitle: 'Menu',
+        menuHistory: 'Historique',
+        menuRecommend: 'Recommandations AI',
+        menuRoute: 'Planificateur d\'itinéraire',
+        menuCurrentLocation: 'Ma Position',
+        menuSidebar: 'Afficher la Barre Latérale',
+        
+        loading: 'Chargement...',
+        noResults: 'Aucun lieu trouvé',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 Recommandations AI',
+        recommendGenreAnalysis: '📊 Votre Analyse de Genre',
+        recommendViewedWorks: 'Œuvres vues',
+        recommendWorksUnit: '',
+        recommendRank: 'e',
+        recommendTimes: ' fois',
+        recommendViewCount: 'Nombre de vues',
+        recommendNoWorks: 'Aucune recommandation',
+        
+        // 注意書き
+        noticeTitle: '⚠️ Avis Important',
+        noticeData: 'Cette carte ne couvre pas tous les lieux de pèlerinage anime',
+        noticeAi: 'Posez vos questions à l\'AI en langage naturel (ex: "Montre-moi les lieux d\'anime à Kyoto")',
+        noticeAccuracy: 'Les informations peuvent changer. Vérifiez avant de visiter',
+        noticeTranslation: 'Les traductions sont automatiques et peuvent être inexactes',
+        noticePrivate: 'Certains lieux sont des propriétés privées. N\'entrez pas dans les zones interdites',
+        noticePhoto: 'Soyez respectueux lors de la prise de photos',
+        noticeManner: 'Veuillez respecter les résidents locaux'
+    },
+    pt: {
+        searchPlaceholder: 'Pesquisar locais...',
+        
+        categoryAll: 'Todos',
+        categoryShrine: 'Santuário/Templo',
+        categoryStation: 'Estação',
+        categorySchool: 'Escola',
+        categoryPark: 'Parque',
+        categorySea: 'Mar/Rio',
+        categoryBridge: 'Ponte',
+        categoryShop: 'Loja',
+        categoryTower: 'Torre',
+        
+        allAnime: 'Todos os Anime',
+        spotsCount: ' locais',
+        
+        aiChatTitle: 'Pesquisa AI',
+        aiChatPlaceholder: 'Ex: Mostre-me locais de anime em Kyoto',
+        aiChatSend: 'Enviar',
+        aiChatSearching: 'Pesquisando...',
+        aiSpotsFound: ' locais encontrados',
+        aiShowOnMap: 'Mostrar tudo no mapa',
+        aiTellMore: 'Conte-me mais',
+        aiError: 'Erro',
+        
+        detailTitle: 'Detalhes do Local',
+        detailAnimeName: 'Anime',
+        detailSpotName: 'Local',
+        detailAddress: 'Endereço',
+        detailTranslate: 'Traduzir',
+        detailAddToRoute: 'Adicionar à Rota',
+        
+        menuTitle: 'Menu',
+        menuHistory: 'Histórico',
+        menuRecommend: 'Recomendações AI',
+        menuRoute: 'Planejador de Rota',
+        menuCurrentLocation: 'Minha Localização',
+        menuSidebar: 'Mostrar Barra Lateral',
+        
+        loading: 'Carregando...',
+        noResults: 'Nenhum local encontrado',
+        
+        // AIおすすめ
+        recommendTitle: '🌟 Recomendações AI',
+        recommendGenreAnalysis: '📊 Sua Análise de Gênero',
+        recommendViewedWorks: 'Obras vistas',
+        recommendWorksUnit: '',
+        recommendRank: '°',
+        recommendTimes: ' vezes',
+        recommendViewCount: 'Vezes visto',
+        recommendNoWorks: 'Sem recomendações',
+        
+        // 注意書き
+        noticeTitle: '⚠️ Aviso Importante',
+        noticeData: 'Este mapa não cobre todos os locais de peregrinação de anime',
+        noticeAi: 'Pergunte ao AI em linguagem natural (ex: "Mostre-me locais de anime em Kyoto")',
+        noticeAccuracy: 'As informações podem mudar. Verifique antes de visitar',
+        noticeTranslation: 'As traduções são automáticas e podem não ser precisas',
+        noticePrivate: 'Alguns locais são propriedade privada. Não entre em áreas restritas',
+        noticePhoto: 'Tenha cuidado para não incomodar outros ao tirar fotos',
+        noticeManner: 'Por favor, respeite os moradores locais'
+    }
+};
+
+// 翻訳テキストを取得
+function getTranslation(key) {
+    const lang = currentLanguage || 'ja';
+    if (uiTranslations[lang] && uiTranslations[lang][key]) {
+        return uiTranslations[lang][key];
+    }
+    // フォールバック: 日本語
+    return uiTranslations['ja'][key] || key;
+}
+
+// UI全体を翻訳する関数
+function translateUI() {
+    const t = uiTranslations[currentLanguage] || uiTranslations['ja'];
+    
+    // 検索プレースホルダー
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.placeholder = t.searchPlaceholder;
+    }
+    
+    // カテゴリフィルタボタン（ID指定で翻訳）
+    const categoryTextItems = {
+        'cat-text-all': t.categoryAll,
+        'cat-text-shrine': t.categoryShrine,
+        'cat-text-station': t.categoryStation,
+        'cat-text-school': t.categorySchool,
+        'cat-text-park': t.categoryPark,
+        'cat-text-sea': t.categorySea,
+        'cat-text-bridge': t.categoryBridge,
+        'cat-text-shop': t.categoryShop,
+        'cat-text-tower': t.categoryTower
+    };
+    
+    for (const [id, text] of Object.entries(categoryTextItems)) {
+        const el = document.getElementById(id);
+        if (el && text) {
+            el.textContent = text;
+        }
+    }
+    
+    // アニメフィルタのデフォルトオプション
+    const animeFilter = document.getElementById('anime-filter');
+    if (animeFilter && animeFilter.options.length > 0) {
+        animeFilter.options[0].textContent = t.allAnime;
+    }
+    
+    // AIチャット
+    const aiInput = document.getElementById('ai-question-input');
+    if (aiInput) {
+        aiInput.placeholder = t.aiChatPlaceholder;
+    }
+    
+    const aiSendBtn = document.getElementById('ai-send-btn');
+    if (aiSendBtn) {
+        aiSendBtn.textContent = t.aiChatSend;
+    }
+    
+    // メニュー項目（data-translate属性がある要素）
+    document.querySelectorAll('[data-translate]').forEach(el => {
+        const key = el.getAttribute('data-translate');
+        if (t[key]) {
+            el.textContent = t[key];
+        }
+    });
+    
+    // ========================================
+    // メニュー翻訳（ID指定で直接翻訳）
+    // ========================================
+    
+    // メニュータイトル
+    const menuTitle = document.getElementById('menu-title');
+    if (menuTitle) {
+        menuTitle.textContent = t.menuTitle;
+    }
+    
+    // メニュー項目
+    const menuTextItems = {
+        'menu-text-history': t.menuHistory,
+        'menu-text-recommend': t.menuRecommend,
+        'menu-text-ai-search': t.aiChatTitle,
+        'menu-text-sidebar': t.menuSidebar,
+        'menu-text-route': t.menuRoute
+    };
+    
+    for (const [id, text] of Object.entries(menuTextItems)) {
+        const el = document.getElementById(id);
+        if (el && text) {
+            el.textContent = text;
+        }
+    }
+    
+    // ========================================
+    // サイドバータイトル翻訳
+    // ========================================
+    const recommendSidebarTitle = document.getElementById('recommend-sidebar-title');
+    if (recommendSidebarTitle) {
+        recommendSidebarTitle.textContent = t.recommendTitle || '🌟 AIおすすめ';
+    }
+    
+    const historySidebarTitle = document.getElementById('history-sidebar-title');
+    if (historySidebarTitle) {
+        historySidebarTitle.textContent = t.menuHistory;
+    }
+    
+    // ========================================
+    // 注意書き翻訳
+    // ========================================
+    const noticeItems = {
+        'notice-title': t.noticeTitle,
+        'notice-data': t.noticeData,
+        'notice-ai': t.noticeAi,
+        'notice-accuracy': t.noticeAccuracy,
+        'notice-translation': t.noticeTranslation,
+        'notice-private': t.noticePrivate,
+        'notice-photo': t.noticePhoto,
+        'notice-manner': t.noticeManner
+    };
+    
+    for (const [id, text] of Object.entries(noticeItems)) {
+        const el = document.getElementById(id);
+        if (el && text) {
+            el.textContent = text;
+        }
+    }
+    
+    console.log('🌐 UI翻訳完了:', currentLanguage);
+}
+
 // 言語モーダルを開く
 function openLanguageModal() {
     const overlay = document.getElementById('language-modal-overlay');
@@ -470,7 +1107,8 @@ function getCurrentLocation() {
 
 function updateCount() {
     const visibleCount = getVisibleSpots().length;
-    document.getElementById('count-display').textContent = `${visibleCount}件の聖地`;
+    const spotsCountText = getTranslation('spotsCount');
+    document.getElementById('count-display').textContent = `${visibleCount}${spotsCountText}`;
 }
 
 // ========================================
@@ -651,8 +1289,8 @@ function filterAnimeDropdown() {
     // 現在選択されているアニメを保存
     const currentSelection = select.value;
     
-    // ドロップダウンをクリア
-    select.innerHTML = '<option value="all">すべてのアニメ</option>';
+    // ドロップダウンをクリア（多言語対応）
+    select.innerHTML = `<option value="all">${getTranslation('allAnime')}</option>`;
     
     // フィルタリング
     let filteredAnimes = window.allAnimeList.filter(anime => {
@@ -1189,7 +1827,7 @@ async function sendAIQuestion() {
     
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'ai-loading';
-    loadingDiv.innerHTML = '🤖 考え中...';
+    loadingDiv.innerHTML = '🤖 ' + getTranslation('aiChatSearching');
     chatArea.appendChild(loadingDiv);
     chatArea.scrollTop = chatArea.scrollHeight;
     
@@ -1299,20 +1937,22 @@ async function sendAIQuestion() {
         console.log('spots数:', spots.length);
         
         if (spots.length > 0) {
-            // 件数サマリー
+            // 件数サマリー（多言語対応）
+            const spotsFoundText = getTranslation('aiSpotsFound');
             content += `
                 <div style="margin-top: 12px; padding: 8px 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; font-size: 13px;">
-                    📍 ${spots.length}件の聖地が見つかりました
+                    📍 ${spots.length}${spotsFoundText}
                 </div>
             `;
             
-            // 一括表示ボタン
+            // 一括表示ボタン（多言語対応）
             const spotIds = spots.map(s => s.id).join(',');
+            const showOnMapText = getTranslation('aiShowOnMap');
             content += `
                 <button onclick="showSpotsOnMap('${spotIds}')" 
                     style="margin-top: 8px; width: 100%; padding: 10px; background: #34a853; color: white; border: none; 
                     border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                    🗺️ すべて地図に表示
+                    🗺️ ${showOnMapText}
                 </button>
             `;
             
@@ -1364,7 +2004,7 @@ async function sendAIQuestion() {
         
         const errorDiv = document.createElement('div');
         errorDiv.className = 'ai-error';
-        errorDiv.textContent = `エラー: ${error.message}`;
+        errorDiv.textContent = `${getTranslation('aiError')}: ${error.message}`;
         chatArea.appendChild(errorDiv);
     } finally {
         input.disabled = false;
@@ -1502,7 +2142,7 @@ function showSpotsOnMap(idsString) {
     }
     
     // 件数表示を更新
-    document.getElementById('count-display').textContent = `${visibleMarkers.length}件の聖地`;
+    document.getElementById('count-display').textContent = `${visibleMarkers.length}${getTranslation('spotsCount')}`;
     
     // AIパネルを閉じる
     toggleAIPanel();
@@ -1605,7 +2245,7 @@ async function showRecommendations() {
     const sidebar = document.getElementById('recommend-sidebar');
     const content = document.getElementById('recommend-content');
     
-    content.innerHTML = '<div class="ai-loading">🤖 AIがおすすめを考え中...</div>';
+    content.innerHTML = '<div class="ai-loading">🤖 ' + getTranslation('aiChatSearching') + '</div>';
     sidebar.classList.add('show');
     recommendSidebarOpen = true;
 
@@ -1628,11 +2268,22 @@ async function showRecommendations() {
         
         if (data.error) throw new Error(data.error);
         
+        // 翻訳テキストを取得
+        const t = {
+            genreAnalysis: getTranslation('recommendGenreAnalysis'),
+            viewedWorks: getTranslation('recommendViewedWorks'),
+            worksUnit: getTranslation('recommendWorksUnit'),
+            rank: getTranslation('recommendRank'),
+            times: getTranslation('recommendTimes'),
+            viewCount: getTranslation('recommendViewCount'),
+            noWorks: getTranslation('recommendNoWorks')
+        };
+        
         // ジャンルランキング形式で表示
         let html = `
             <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
-                <div style="font-size: 14px; opacity: 0.9;">📊 あなたの好みのジャンル分析</div>
-                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">閲覧した作品: ${data.total_viewed}件</div>
+                <div style="font-size: 14px; opacity: 0.9;">${t.genreAnalysis}</div>
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">${t.viewedWorks}: ${data.total_viewed}${t.worksUnit}</div>
             </div>
         `;
         
@@ -1646,8 +2297,8 @@ async function showRecommendations() {
                 html += `
                     <div style="margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px;">
-                            <span>${index + 1}位 ${genre}</span>
-                            <span>${count}回</span>
+                            <span>${index + 1}${t.rank} ${genre}</span>
+                            <span>${count}${t.times}</span>
                         </div>
                         <div style="background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden;">
                             <div style="background: ${colors[index % 5]}; height: 100%; width: ${barWidth}%; border-radius: 10px; transition: width 0.5s;"></div>
@@ -1678,10 +2329,10 @@ async function showRecommendations() {
                     <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                         <div style="background: ${headerBg}; padding: 12px 15px; color: white;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-weight: bold; font-size: 15px;">${rec.rank}位 ${rec.genre}</span>
+                                <span style="font-weight: bold; font-size: 15px;">${rec.rank}${t.rank} ${rec.genre}</span>
                                 <span style="font-size: 16px; color: ${starColor}; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${stars}</span>
                             </div>
-                            <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">閲覧回数: ${rec.count}回</div>
+                            <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">${t.viewCount}: ${rec.count}${t.times}</div>
                         </div>
                         <div style="background: white; padding: 12px;">
                 `;
@@ -1709,7 +2360,7 @@ async function showRecommendations() {
                         `;
                     });
                 } else {
-                    html += '<div style="color: #999; font-size: 13px;">おすすめ作品がありません</div>';
+                    html += `<div style="color: #999; font-size: 13px;">${t.noWorks}</div>`;
                 }
                 
                 html += '</div></div>';
@@ -1719,7 +2370,7 @@ async function showRecommendations() {
         content.innerHTML = html;
         
     } catch (error) {
-        content.innerHTML = `<div class="ai-error">エラー: ${error.message}</div>`;
+        content.innerHTML = `<div class="ai-error">${getTranslation('aiError')}: ${error.message}</div>`;
     }
 }
 
@@ -2126,7 +2777,7 @@ function loadSpotSelectionList(spots) {
     if (filterInfo) {
         container.innerHTML = `<div class="list-info" style="background: #e8f0fe; color: #1a73e8; font-weight: 500;">${filterInfo} (${spots.length}件)</div>`;
     } else {
-        container.innerHTML = `<div class="list-info">${spots.length}件の聖地</div>`;
+        container.innerHTML = `<div class="list-info">${spots.length}${getTranslation('spotsCount')}</div>`;
     }
     
     spots.forEach(spot => {
