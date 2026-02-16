@@ -415,6 +415,53 @@ def ai_search():
         conn = get_db_connection()
         spots_data = []
         
+        # ========================================
+        # ジャンル検索（多言語対応）
+        # ========================================
+        genre_map = {
+            # 日本語
+            '青春': '青春', '恋愛': '恋愛', 'ラブコメ': 'ラブコメ', 'コメディ': 'コメディ',
+            'アクション': 'アクション', 'ファンタジー': 'ファンタジー', 'SF': 'SF',
+            'ミステリー': 'ミステリー', '日常': '日常', 'スポーツ': 'スポーツ',
+            'ホラー': 'ホラー', '音楽': '音楽', 'アイドル': 'アイドル',
+            # 英語
+            'youth': '青春', 'romance': '恋愛', 'romcom': 'ラブコメ', 'comedy': 'コメディ',
+            'action': 'アクション', 'fantasy': 'ファンタジー', 'sci-fi': 'SF', 'science fiction': 'SF',
+            'mystery': 'ミステリー', 'slice of life': '日常', 'daily life': '日常',
+            'sports': 'スポーツ', 'horror': 'ホラー', 'music': '音楽', 'idol': 'アイドル',
+            # 韓国語
+            '청춘': '青春', '로맨스': '恋愛', '코미디': 'コメディ', '액션': 'アクション',
+            '판타지': 'ファンタジー', '미스터리': 'ミステリー', '일상': '日常', '스포츠': 'スポーツ',
+            # 中国語
+            '青春': '青春', '恋爱': '恋愛', '喜剧': 'コメディ', '动作': 'アクション',
+            '奇幻': 'ファンタジー', '悬疑': 'ミステリー', '日常': '日常', '运动': 'スポーツ',
+            # スペイン語
+            'juventud': '青春', 'romántico': '恋愛', 'comedia': 'コメディ', 'acción': 'アクション',
+            'fantasía': 'ファンタジー', 'misterio': 'ミステリー', 'deportes': 'スポーツ',
+        }
+        
+        detected_genre = None
+        for genre_keyword, ja_genre in genre_map.items():
+            if genre_keyword in user_question or genre_keyword.lower() in question_lower:
+                detected_genre = ja_genre
+                print(f"ジャンル検出: {genre_keyword} → {ja_genre}")
+                break
+        
+        # ジャンルで検索
+        if detected_genre:
+            results = conn.execute('''
+                SELECT DISTINCT s.*, a.anime_url 
+                FROM spots s 
+                LEFT JOIN anime a ON s.anime_name = a.anime
+                JOIN anime_genre ag ON a.id = ag.anime_id
+                JOIN genre g ON g.id = ag.genre_id
+                WHERE g.name = ?
+                ORDER BY RANDOM()
+                LIMIT 30
+            ''', [detected_genre]).fetchall()
+            spots_data.extend([dict(row) for row in results])
+            print(f"ジャンル「{detected_genre}」で{len(results)}件見つかりました")
+        
         if animes:
             for anime in animes:
                 results = conn.execute('''
@@ -517,6 +564,19 @@ def ai_search():
         }
         lang_instruction = lang_instructions.get(language, 'Please answer in English.')
         
+        # 【登場シーン】【見どころ】のラベルを多言語対応
+        scene_labels = {
+            'ja': ('登場シーン', '見どころ'),
+            'en': ('Scene', 'Highlights'),
+            'zh': ('登场场景', '看点'),
+            'ko': ('등장 장면', '볼거리'),
+            'hi': ('दृश्य', 'मुख्य आकर्षण'),
+            'es': ('Escena', 'Destacados'),
+            'fr': ('Scène', 'Points forts'),
+            'pt': ('Cena', 'Destaques')
+        }
+        scene_label, highlight_label = scene_labels.get(language, ('Scene', 'Highlights'))
+        
         # DBのデータをそのまま使う
         spots_info = []
         for spot in display_spots:
@@ -557,8 +617,8 @@ Format (must follow):
 Brief synopsis of the anime in one sentence.
 
 📍 Location Name
-【Scene】Which episode and what scene it appears in
-【Highlights】Points of interest when visiting
+【{scene_label}】Which episode and what scene it appears in
+【{highlight_label}】Points of interest when visiting
 
 Rules:
 1. Describe each location in 3-4 sentences
