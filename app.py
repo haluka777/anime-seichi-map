@@ -41,9 +41,9 @@ def index():
 @app.route('/api/spots', methods=['GET'])
 def get_spots():
     conn = get_db_connection()
-    # anime_urlを含めてJOIN
+    # anime_urlとanime_yomiを含めてJOIN
     spots = conn.execute('''
-        SELECT s.*, a.anime_url 
+        SELECT s.*, a.anime_url, a.anime_yomi 
         FROM spots s 
         LEFT JOIN anime a ON s.anime_name = a.anime
     ''').fetchall()
