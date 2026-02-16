@@ -829,12 +829,19 @@ async function applyFilter() {
     currentFilter = document.getElementById('anime-filter').value;
     const searchInput = document.getElementById('search-input').value.trim();
     
+    // デバウンスタイマーをクリア
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        searchTimeout = null;
+    }
+    
     // 検索が空の場合 → 全件表示にリセット
     if (!searchInput) {
         currentSearch = '';
+        isSearching = false; // 検索フラグもリセット
         
-        // 強制的に全マーカーを再表示
-        resetAllMarkers();
+        // マーカーを更新（これで全件表示される）
+        updateMarkers();
         
         renderList();
         updateCount();
@@ -850,7 +857,6 @@ async function applyFilter() {
     }
     
     // 入力中の場合は少し待つ（デバウンス）
-    clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
         await performSmartSearch(searchInput);
     }, 500);
