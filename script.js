@@ -1911,11 +1911,25 @@ async function sendAIQuestion() {
         formattedAnswer = formattedAnswer.replace(/📍\s*/g, 
             '<br><span style="color: #333; font-weight: 500;">📍 </span>');
         
-        // 【登場シーン】【見どころ】を色付け（シンプルにspanだけ）
-        formattedAnswer = formattedAnswer.replace(/【登場シーン】/g, 
-            '<br><span style="color: #e91e63; font-weight: 500;">【登場シーン】</span>');
-        formattedAnswer = formattedAnswer.replace(/【見どころ】/g, 
-            '<br><span style="color: #4caf50; font-weight: 500;">【見どころ】</span>');
+        // 【登場シーン】【見どころ】を色付け（8言語対応）
+        const scenePatterns = [
+            '登場シーン', 'Scene', '登场场景', '등장 장면', 'दृश्य', 'Escena', 'Scène', 'Cena'
+        ];
+        const highlightPatterns = [
+            '見どころ', 'Highlights', '看点', '볼거리', 'मुख्य आकर्षण', 'Destacados', 'Points forts', 'Destaques'
+        ];
+        
+        scenePatterns.forEach(pattern => {
+            const regex = new RegExp(`【${pattern}】`, 'g');
+            formattedAnswer = formattedAnswer.replace(regex, 
+                `<br><span style="color: #e91e63; font-weight: 500;">【${pattern}】</span>`);
+        });
+        
+        highlightPatterns.forEach(pattern => {
+            const regex = new RegExp(`【${pattern}】`, 'g');
+            formattedAnswer = formattedAnswer.replace(regex, 
+                `<br><span style="color: #4caf50; font-weight: 500;">【${pattern}】</span>`);
+        });
         
         // 改行を整形
         formattedAnswer = formattedAnswer.replace(/\n\n/g, '<br><br>');
