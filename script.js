@@ -1259,13 +1259,25 @@ async function filterByGenre(genreId, genreName) {
 }
 
 function createFilterOptions() {
-    const animeSet = new Set();
+    const animeMap = new Map(); // anime_name → anime_yomi のマップ
     spots.forEach(spot => {
-        if (spot.anime_name) animeSet.add(spot.anime_name);
+        if (spot.anime_name) {
+            // 読み仮名がある場合は保存
+            if (!animeMap.has(spot.anime_name)) {
+                animeMap.set(spot.anime_name, spot.anime_yomi || spot.anime_name);
+            }
+        }
     });
 
-    // 全アニメリストを保存（フィルタ用）
-    window.allAnimeList = Array.from(animeSet).sort();
+    // 全アニメリストを保存（フィルタ用）- 読み仮名でソート
+    window.allAnimeList = Array.from(animeMap.keys()).sort((a, b) => {
+        const yomiA = animeMap.get(a) || a;
+        const yomiB = animeMap.get(b) || b;
+        return yomiA.localeCompare(yomiB, 'ja');
+    });
+    
+    // 読み仮名マップも保存
+    window.animeYomiMap = animeMap;
     
     const select = document.getElementById('anime-filter');
     window.allAnimeList.forEach(anime => {
@@ -1292,10 +1304,13 @@ function filterAnimeDropdown() {
     // ドロップダウンをクリア（多言語対応）
     select.innerHTML = `<option value="all">${getTranslation('allAnime')}</option>`;
     
-    // フィルタリング
+    // フィルタリング（読み仮名を使用）
     let filteredAnimes = window.allAnimeList.filter(anime => {
-        const matchesSearch = searchText === '' || anime.toLowerCase().includes(searchText);
-        const matchesTab = currentTab === 'all' || matchesAnimeTab(anime, currentTab);
+        const yomi = window.animeYomiMap ? window.animeYomiMap.get(anime) : null;
+        const matchesSearch = searchText === '' || 
+            anime.toLowerCase().includes(searchText) || 
+            (yomi && yomi.toLowerCase().includes(searchText));
+        const matchesTab = currentTab === 'all' || matchesAnimeTab(anime, currentTab, yomi);
         return matchesSearch && matchesTab;
     });
     
@@ -1337,18 +1352,20 @@ function filterByTab(tab) {
     applyFilter();
 }
 
-// アニメ名がタブに一致するかチェック
-function matchesAnimeTab(animeName, tab) {
+// アニメ名がタブに一致するかチェック（読み仮名を使用）
+function matchesAnimeTab(animeName, tab, animeYomi = null) {
     if (tab === 'all') return true;
     
-    const firstChar = animeName.charAt(0);
+    // 読み仮名があればそれを使う、なければアニメ名の最初の文字
+    const targetString = animeYomi || animeName;
+    const firstChar = targetString.charAt(0);
     
     // A-Z（英数字）
     if (tab === 'A') {
-        return /^[A-Za-z0-9]/.test(firstChar);
+        return /^[A-Za-z0-9]/.test(animeName.charAt(0));
     }
     
-    // あいうえお行の判定
+    // あいうえお行の判定（読み仮名ベース）
     const hiraganaRanges = {
         'あ': ['あ', 'い', 'う', 'え', 'お', 'ア', 'イ', 'ウ', 'エ', 'オ'],
         'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご', 'カ', 'キ', 'ク', 'ケ', 'コ', 'ガ', 'ギ', 'グ', 'ゲ', 'ゴ'],
