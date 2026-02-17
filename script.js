@@ -89,7 +89,7 @@ const uiTranslations = {
         spotsCount: '件の聖地',
         
         // AIチャット
-        aiChatTitle: 'AI聖地検索',
+        aiChatTitle: 'AIチャットボット',
         aiChatPlaceholder: '例: 京都のアニメ聖地を教えて',
         aiChatSend: '送信',
         aiChatSearching: '検索中...',
@@ -112,7 +112,7 @@ const uiTranslations = {
         menuRecommend: 'AIおすすめ',
         menuRoute: 'ルートプランナー',
         menuCurrentLocation: '現在地',
-        menuSidebar: 'サイドバーを表示',
+        menuSidebar: 'アニメ聖地一覧',
         
         // AIおすすめ
         recommendTitle: '🌟 AIおすすめ',
@@ -154,7 +154,7 @@ const uiTranslations = {
         allAnime: 'All Anime',
         spotsCount: ' locations',
         
-        aiChatTitle: 'AI Location Search',
+        aiChatTitle: 'AI Chatbot',
         aiChatPlaceholder: 'e.g. Show me anime locations in Kyoto',
         aiChatSend: 'Send',
         aiChatSearching: 'Searching...',
@@ -175,7 +175,7 @@ const uiTranslations = {
         menuRecommend: 'AI Recommend',
         menuRoute: 'Route Planner',
         menuCurrentLocation: 'My Location',
-        menuSidebar: 'Show Sidebar',
+        menuSidebar: 'Anime Locations List',
         
         loading: 'Loading...',
         noResults: 'No locations found',
@@ -216,7 +216,7 @@ const uiTranslations = {
         allAnime: '所有动漫',
         spotsCount: '个圣地',
         
-        aiChatTitle: 'AI圣地搜索',
+        aiChatTitle: 'AI聊天机器人',
         aiChatPlaceholder: '例如: 告诉我京都的动漫圣地',
         aiChatSend: '发送',
         aiChatSearching: '搜索中...',
@@ -237,7 +237,7 @@ const uiTranslations = {
         menuRecommend: 'AI推荐',
         menuRoute: '路线规划',
         menuCurrentLocation: '我的位置',
-        menuSidebar: '显示侧边栏',
+        menuSidebar: '动漫圣地列表',
         
         loading: '加载中...',
         noResults: '没有找到圣地',
@@ -278,7 +278,7 @@ const uiTranslations = {
         allAnime: '모든 애니메이션',
         spotsCount: '개의 성지',
         
-        aiChatTitle: 'AI 성지 검색',
+        aiChatTitle: 'AI 챗봇',
         aiChatPlaceholder: '예: 교토의 애니메이션 성지를 알려줘',
         aiChatSend: '전송',
         aiChatSearching: '검색 중...',
@@ -299,7 +299,7 @@ const uiTranslations = {
         menuRecommend: 'AI 추천',
         menuRoute: '경로 플래너',
         menuCurrentLocation: '내 위치',
-        menuSidebar: '사이드바 표시',
+        menuSidebar: '애니메이션 성지 목록',
         
         loading: '로딩 중...',
         noResults: '해당하는 성지가 없습니다',
@@ -340,7 +340,7 @@ const uiTranslations = {
         allAnime: 'सभी एनीमे',
         spotsCount: ' स्थान',
         
-        aiChatTitle: 'AI स्थान खोज',
+        aiChatTitle: 'AI चैटबॉट',
         aiChatPlaceholder: 'उदाहरण: क्योटो में एनीमे स्थान दिखाओ',
         aiChatSend: 'भेजें',
         aiChatSearching: 'खोज रहा है...',
@@ -361,7 +361,7 @@ const uiTranslations = {
         menuRecommend: 'AI सुझाव',
         menuRoute: 'रूट प्लानर',
         menuCurrentLocation: 'मेरा स्थान',
-        menuSidebar: 'साइडबार दिखाएं',
+        menuSidebar: 'एनीमे स्थान सूची',
         
         loading: 'लोड हो रहा है...',
         noResults: 'कोई स्थान नहीं मिला',
@@ -402,7 +402,7 @@ const uiTranslations = {
         allAnime: 'Todos los Anime',
         spotsCount: ' lugares',
         
-        aiChatTitle: 'Búsqueda AI',
+        aiChatTitle: 'Chatbot AI',
         aiChatPlaceholder: 'Ej: Muéstrame lugares de anime en Kioto',
         aiChatSend: 'Enviar',
         aiChatSearching: 'Buscando...',
@@ -423,7 +423,7 @@ const uiTranslations = {
         menuRecommend: 'Recomendaciones AI',
         menuRoute: 'Planificador de Ruta',
         menuCurrentLocation: 'Mi Ubicación',
-        menuSidebar: 'Mostrar Barra Lateral',
+        menuSidebar: 'Lista de Lugares',
         
         loading: 'Cargando...',
         noResults: 'No se encontraron lugares',
@@ -464,7 +464,7 @@ const uiTranslations = {
         allAnime: 'Tous les Anime',
         spotsCount: ' lieux',
         
-        aiChatTitle: 'Recherche AI',
+        aiChatTitle: 'Chatbot AI',
         aiChatPlaceholder: 'Ex: Montre-moi les lieux d\'anime à Kyoto',
         aiChatSend: 'Envoyer',
         aiChatSearching: 'Recherche...',
@@ -485,7 +485,7 @@ const uiTranslations = {
         menuRecommend: 'Recommandations AI',
         menuRoute: 'Planificateur d\'itinéraire',
         menuCurrentLocation: 'Ma Position',
-        menuSidebar: 'Afficher la Barre Latérale',
+        menuSidebar: 'Liste des Lieux',
         
         loading: 'Chargement...',
         noResults: 'Aucun lieu trouvé',
@@ -526,7 +526,7 @@ const uiTranslations = {
         allAnime: 'Todos os Anime',
         spotsCount: ' locais',
         
-        aiChatTitle: 'Pesquisa AI',
+        aiChatTitle: 'Chatbot AI',
         aiChatPlaceholder: 'Ex: Mostre-me locais de anime em Kyoto',
         aiChatSend: 'Enviar',
         aiChatSearching: 'Pesquisando...',
@@ -547,7 +547,7 @@ const uiTranslations = {
         menuRecommend: 'Recomendações AI',
         menuRoute: 'Planejador de Rota',
         menuCurrentLocation: 'Minha Localização',
-        menuSidebar: 'Mostrar Barra Lateral',
+        menuSidebar: 'Lista de Lugares',
         
         loading: 'Carregando...',
         noResults: 'Nenhum local encontrado',
